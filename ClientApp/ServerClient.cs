@@ -12,6 +12,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml.Schema;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace ServerApp
 {
@@ -259,11 +260,35 @@ namespace ServerApp
 					return;
 				}
 
-				// 전송 로그 업데이트
-				UpdateLog($"{data.Client.RemoteEndPoint}:{data}");
+				// 비동기 작업중 데이터에 접근 하므로 쓰레드 세이프 실행
+				lock (ClientList.SyncRoot)
+				{
+					foreach (var client in ClientList.Where(e => e.Equals(data.Client)))
+					{
+						// 메타데이터 값이 false(text)라면
+						if (data.Data[0] == 0)
+						{
+							// 메타데이터 제거하고 Data 덮어 쓰기
+							byte[] messageData = new byte[data.Data.Length - 1];
+							Array.Copy(data.Data, 1, messageData, 0, data.Data.Length - 1);
 
-				// 전송자를 제외한 모든 클라이언트에게 데이터 전송
-				SendDataToAllClient(data, data.ToString());
+							data.Data = messageData;
+
+							// 전송 로그 업데이트
+							UpdateLog($"{data.Client.RemoteEndPoint}에서 수신:{data}");
+
+							// 전송자를 제외한 모든 클라이언트에게 데이터 전송
+							SendDataToAllClient(data, data.ToString());
+						}
+						// 메타데이터 값이 true(file)라면
+						else if (data.Data[0] == 1)
+						{
+							data.Data = null;
+							// 전송 로그 업데이트
+							UpdateLog($"{data.Client.RemoteEndPoint}에서 파일 수신:{"파일 수신"}");
+						}
+					}
+				}
 
 				// 서버가 실행중인경우 계속해서 접속중인 클라이언트로 부터 데이터 수신 대기
 				if (Server != null && Server.Active)

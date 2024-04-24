@@ -4,14 +4,18 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.ServiceModel;
+using System.ServiceModel.Channels;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static System.Net.WebRequestMethods;
+using File = System.IO.File;
 
 namespace MainApp
 {
@@ -137,8 +141,19 @@ namespace MainApp
 				// 전송할 메시지 데이터 설정
 				var message = Encoding.UTF8.GetBytes(textNickName.Text + " : " + textMessage.Text);
 
+				// 파일여부 검증용 메타데이터(false)
+				var isFile = BitConverter.GetBytes(false);
+
+				// 메타데이터를 삽입할 바이트 객체 bool(1byte) + message.Length
+				var messageData = new byte[1 + message.Length];
+
+				// 배열 앞부분에 메타데이터를 삽입한다
+				isFile.CopyTo(messageData, 0);
+				// 메타데이터 뒤에 텍스트 데이터 삽입
+				message.CopyTo(messageData, 1);
+
 				// 서버에 데이터 송신
-				Client?.Socket.Send(message);
+				Client?.Socket.Send(messageData);
 
 				// 로그 출력
 				UpdateLog($"송신>>{Encoding.UTF8.GetString(message)}");
@@ -257,6 +272,56 @@ namespace MainApp
 		private void SetConnectionStatus(bool connectionStatus)
 		{
 			Invoke(new Action(() => ssServerStatusLabel.Text = $"서버 접속 상태 : {(connectionStatus ? "접속중" : "미접속")}"));
+		}
+
+		private void btnFileSend_Click(object sender, EventArgs e)
+		{
+			try
+			{
+				using (OpenFileDialog openFileDialog = new OpenFileDialog())
+				{
+					if (openFileDialog.ShowDialog() == DialogResult.OK)
+					{
+						// 파일 경로
+						var filePath = openFileDialog.FileName;
+
+						// 파일여부 검증용 메타데이터(true)
+						var isFile = BitConverter.GetBytes(true);
+						// 파일명
+						var fileName = Path.GetFileName(filePath);
+
+						// 파일이름 인코딩
+						var fileNameData = Encoding.UTF8.GetBytes(fileName);
+						// 파일이름 바이너리 데이터
+						var fileNameLen = BitConverter.GetBytes(fileNameData.Length);
+
+						// 파일의 바이너리 데이터
+						var fileData = File.ReadAllBytes(filePath);
+
+						// 바이트 배열 객체생성(메타데이터(bool, 1byte) + 파일이름데이터, 파일이름길이, 파일데이터)
+						var sendData = new byte[1 + fileNameData.Length + fileNameLen.Length + fileData.Length];
+
+						// 배열 앞부분에 메타데이터 삽입
+						isFile.CopyTo(sendData, 0);
+						// 메타데이터 뒷부분에 파일이름 데이터 삽입
+						fileNameData.CopyTo(sendData, 1);
+						// 파일이름 바이너리 데이터 뒷부분에 파일이름 길이 삽입
+						fileNameLen.CopyTo(sendData, 1 + fileNameData.Length);
+						// 파일이름 및 파일이름 길이 뒷부분에 파일 데이터 삽입
+						fileData.CopyTo(sendData, 1 + fileNameData.Length + fileNameLen.Length);
+
+						// 서버에 데이터 송신
+						//Client?.Socket.Send(sendData);
+
+						// 로그 출력
+						UpdateLog($"서버에 파일 송신>>{fileName}");
+					}
+				}
+			}
+			catch (Exception)
+			{
+
+			}
 		}
 	}
 }

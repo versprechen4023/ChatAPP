@@ -36,6 +36,8 @@
 			this.labelPort = new System.Windows.Forms.Label();
 			this.labelIp = new System.Windows.Forms.Label();
 			this.gbInfo = new System.Windows.Forms.GroupBox();
+			this.textNickName = new System.Windows.Forms.TextBox();
+			this.lbNickName = new System.Windows.Forms.Label();
 			this.btnSendMessage = new System.Windows.Forms.Button();
 			this.textMessage = new System.Windows.Forms.TextBox();
 			this.lbMessage = new System.Windows.Forms.Label();
@@ -43,8 +45,7 @@
 			this.lbLog = new System.Windows.Forms.ListBox();
 			this.ssServerStatus = new System.Windows.Forms.StatusStrip();
 			this.ssServerStatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
-			this.lbNickName = new System.Windows.Forms.Label();
-			this.textNickName = new System.Windows.Forms.TextBox();
+			this.btnFileSend = new System.Windows.Forms.Button();
 			this.gbMain.SuspendLayout();
 			this.gbInfo.SuspendLayout();
 			this.gbLog.SuspendLayout();
@@ -129,6 +130,7 @@
 			// 
 			// gbInfo
 			// 
+			this.gbInfo.Controls.Add(this.btnFileSend);
 			this.gbInfo.Controls.Add(this.textNickName);
 			this.gbInfo.Controls.Add(this.lbNickName);
 			this.gbInfo.Controls.Add(this.btnSendMessage);
@@ -142,6 +144,23 @@
 			this.gbInfo.TabIndex = 1;
 			this.gbInfo.TabStop = false;
 			this.gbInfo.Text = "인포";
+			// 
+			// textNickName
+			// 
+			this.textNickName.Location = new System.Drawing.Point(87, 17);
+			this.textNickName.Name = "textNickName";
+			this.textNickName.Size = new System.Drawing.Size(100, 21);
+			this.textNickName.TabIndex = 4;
+			this.textNickName.Text = "익명";
+			// 
+			// lbNickName
+			// 
+			this.lbNickName.AutoSize = true;
+			this.lbNickName.Location = new System.Drawing.Point(6, 20);
+			this.lbNickName.Name = "lbNickName";
+			this.lbNickName.Size = new System.Drawing.Size(41, 12);
+			this.lbNickName.TabIndex = 3;
+			this.lbNickName.Text = "닉네임";
 			// 
 			// btnSendMessage
 			// 
@@ -211,22 +230,15 @@
 			this.ssServerStatusLabel.Size = new System.Drawing.Size(59, 17);
 			this.ssServerStatusLabel.Text = "서버 상태";
 			// 
-			// lbNickName
+			// btnFileSend
 			// 
-			this.lbNickName.AutoSize = true;
-			this.lbNickName.Location = new System.Drawing.Point(6, 20);
-			this.lbNickName.Name = "lbNickName";
-			this.lbNickName.Size = new System.Drawing.Size(41, 12);
-			this.lbNickName.TabIndex = 3;
-			this.lbNickName.Text = "닉네임";
-			// 
-			// textNickName
-			// 
-			this.textNickName.Location = new System.Drawing.Point(87, 17);
-			this.textNickName.Name = "textNickName";
-			this.textNickName.Size = new System.Drawing.Size(100, 21);
-			this.textNickName.TabIndex = 4;
-			this.textNickName.Text = "익명";
+			this.btnFileSend.Location = new System.Drawing.Point(528, 20);
+			this.btnFileSend.Name = "btnFileSend";
+			this.btnFileSend.Size = new System.Drawing.Size(137, 23);
+			this.btnFileSend.TabIndex = 5;
+			this.btnFileSend.Text = "파일 전송";
+			this.btnFileSend.UseVisualStyleBackColor = true;
+			this.btnFileSend.Click += new System.EventHandler(this.btnFileSend_Click);
 			// 
 			// MainClient
 			// 
@@ -275,6 +287,7 @@
 		private System.Windows.Forms.Button btnSendMessage;
 		private System.Windows.Forms.TextBox textNickName;
 		private System.Windows.Forms.Label lbNickName;
+		private System.Windows.Forms.Button btnFileSend;
 	}
 }
 
