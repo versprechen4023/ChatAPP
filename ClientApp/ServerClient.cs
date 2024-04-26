@@ -4,15 +4,19 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.Remoting.Messaging;
+using System.ServiceModel.Channels;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml.Schema;
 using static System.Net.Mime.MediaTypeNames;
+using static System.Windows.Forms.AxHost;
 
 namespace ServerApp
 {
@@ -21,12 +25,22 @@ namespace ServerApp
 		/// <summary>
 		/// TCP 서버
 		/// </summary>
-        private TcpListenerExtension Server { get; set; }
+		private TcpListenerExtension Server { get; set; }
 
 		/// <summary>
 		/// 접속중인 클라이언트 리스트
 		/// </summary>
 		private SynchronizedCollection<TcpClientExtension> ClientList { get; set; }
+
+		/// <summary>
+		/// 전송할 데이터의 타입 구분
+		/// </summary>
+		private enum DataType { TEXT = 1, File };
+
+		/// <summary>
+		/// 전송 받은 파일을 저장할 폴더
+		/// </summary>
+		private string SaveFilePath = string.Empty;
 
 		public ServerClient()
 		{
@@ -65,11 +79,11 @@ namespace ServerApp
 				btnServerStart.Enabled = false;
 				btnServerEnd.Enabled = true;
 			}
-			catch(SocketException ex) when (ex.SocketErrorCode == SocketError.AddressAlreadyInUse) 
+			catch (SocketException ex) when (ex.SocketErrorCode == SocketError.AddressAlreadyInUse)
 			{
 				MessageBox.Show("설정하신 포트는 다른 시스템에서 이미 사용중입니다");
 			}
-			catch(Exception ex)
+			catch (Exception ex)
 			{
 				MessageBox.Show(ex.Message);
 			}
@@ -96,7 +110,7 @@ namespace ServerApp
 			// 접속중인 클라이언트 연결을 모두 끊음 쓰레드 충돌 방지를 위한 LOCK 키워드 사용
 			lock (ClientList.SyncRoot)
 			{
-				foreach(var client in ClientList)
+				foreach (var client in ClientList)
 				{
 					client.Socket.Close();
 				}
@@ -133,7 +147,7 @@ namespace ServerApp
 			}
 
 			// 정규식 체크
-			if(!Regex.IsMatch(port, "^[0-9]+$"))
+			if (!Regex.IsMatch(port, "^[0-9]+$"))
 			{
 				MessageBox.Show("포트 번호가 올바르지 않습니다");
 				return false;
@@ -142,14 +156,14 @@ namespace ServerApp
 			var portNum = int.Parse(port);
 
 			// 포트 번호의 범위가 유효한지 확인
-			if(portNum < IPEndPoint.MinPort || IPEndPoint.MaxPort < portNum)
+			if (portNum < IPEndPoint.MinPort || IPEndPoint.MaxPort < portNum)
 			{
 				MessageBox.Show("포트 범위가 유효하지 않습니다 포트범위는 0~65335 사이여야 합니다");
 				return false;
 			}
 
 			return true;
-			
+
 		}
 
 		/// <summary>
@@ -215,19 +229,49 @@ namespace ServerApp
 		/// </summary>
 		/// <param name="data"></param>
 		/// <param name="text"></param>
-		private void SendDataToAllClient(CommonData data, string text)
+		private void SendMessageToAllClient(CommonData data, string text)
 		{
 			// 비동기 실행중 클라이언트 리스트에 접근하므로 쓰레드 세이프 처리를 실행
 			lock (ClientList.SyncRoot)
 			{
 				// 전송자를 제외한 모든 클라이언트에게 데이터 전송
-				foreach(var client in ClientList.Where(e => !e.Equals(data.Client)))
+				foreach (var client in ClientList.Where(e => !e.Equals(data.Client)))
 				{
-					// 데이터 전송
-					client.Socket.Send(Encoding.UTF8.GetBytes(text));
+					// 데이터 재조립 후 클라이언트에 발송
+					var dataType = BitConverter.GetBytes((int)DataType.TEXT);
+					var message = Encoding.UTF8.GetBytes(text);
+					byte[] sendData = new byte[dataType.Length + message.Length];
+					dataType.CopyTo(sendData, 0);
+					message.CopyTo(sendData, 4);
+
+					// 메시지 전송
+					client.Socket.Send(sendData);
 
 					// 로그 업데이트
-					UpdateLog($"{client.RemoteEndPoint}에 데이터 전송>>{text}");
+					UpdateLog($"{client.RemoteEndPoint}에 메시지 전송>>{text}");
+				}
+			}
+		}
+
+		/// <summary>
+		/// 접속중인 모든 클라이언트한테 파일 전송
+		/// </summary>
+		/// <param name="data"></param>
+		/// <param name="fileName"></param>
+		/// <param name="filePath"></param>
+		private void SendFileDataToAllClient(CommonData data, string fileName, string filePath)
+		{
+			// 비동기 실행중 클라이언트 리스트에 접근하므로 쓰레드 세이프 처리를 실행
+			lock (ClientList.SyncRoot)
+			{
+				// 전송자를 제외한 모든 클라이언트에게 데이터 전송
+				foreach (var client in ClientList.Where(e => !e.Equals(data.Client)))
+				{
+					// 데이터 전송(파일 위치 가져와서 재조립 필요)
+					client.Socket.Send(data.Data);
+
+					// 로그 업데이트
+					UpdateLog($"{client.RemoteEndPoint}에 파일 전송>>{fileName}");
 				}
 			}
 		}
@@ -242,10 +286,16 @@ namespace ServerApp
 			{
 				// 클라이언트로(BeginReceive)부터 데이터 수신
 				var data = result.AsyncState as CommonData;
+
+				// 데이터 수신 완료 처리
 				var length = data.Client.Socket.EndReceive(result);
 
+				var fileNameLen = 0;
+
+				var fileName = string.Empty;
+
 				// 클라이언트로 부터 받은 데이터가 없다면 접속 절단으로 판단
-				if(length == 0)
+				if (length == 0)
 				{
 					// 로그 표시
 					UpdateLog($"{data.Client.RemoteEndPoint}에서 접속이 종료되었습니다");
@@ -255,41 +305,59 @@ namespace ServerApp
 					ClientList.Remove(data.Client);
 
 					// 접속중인 클라이언트에게 메시지 송신(절단 클라이언트 제외)
-					SendDataToAllClient(data, $"{data.Client.RemoteEndPoint}에서 접속을 종료했습니다");
-
+					SendMessageToAllClient(data, $"{data.Client.RemoteEndPoint}에서 접속을 종료했습니다");
 					return;
 				}
 
-				// 비동기 작업중 데이터에 접근 하므로 쓰레드 세이프 실행
-				lock (ClientList.SyncRoot)
+				// 메타데이터 타입 가져오기
+				var dataType = BitConverter.ToInt32(data.Data, 0);
+
+				if (dataType == (int)DataType.TEXT)
 				{
-					foreach (var client in ClientList.Where(e => e.Equals(data.Client)))
+					// 메타데이터 빼고 텍스트 추출
+					var message = Encoding.UTF8.GetString(data.Data, 4, length - 4);
+
+					// 전송 로그 업데이트
+					UpdateLog($"{data.Client.RemoteEndPoint}에서 메시지 수신:{message}");
+
+					// 클라이언트들에게 메시지 전달 준비
+					SendMessageToAllClient(data, message);
+				}
+				else if (dataType == (int)DataType.File)
+				{
+					// 파일이름 데이터 가져오기(type(File) 4 byte, 파일이름데이터(4 byte), 파일이름, 파일데이터)
+					fileNameLen = BitConverter.ToInt32(data.Data, 4);
+					// 파일 명 추출
+					fileName = Encoding.UTF8.GetString(data.Data, 8, fileNameLen);
+
+					// 전송 로그 업데이트
+					UpdateLog($"{data.Client.RemoteEndPoint}에서 파일 수신 :{fileName}");
+
+					// 계정의 다운로드 폴더 위치 가져오기
+					var pathUser = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+					var pathDownload = Path.Combine(pathUser, "Downloads");
+
+					// 파일 임시 저장 폴더 저장
+					SaveFilePath = Path.Combine(pathDownload, fileName);
+
+					// 파일 중복 방지 있으면 지움
+					if (File.Exists(SaveFilePath))
 					{
-						// 메타데이터 값이 false(text)라면
-						if (data.Data[0] == 0)
-						{
-							// 메타데이터 제거하고 Data 덮어 쓰기
-							byte[] messageData = new byte[data.Data.Length - 1];
-							Array.Copy(data.Data, 1, messageData, 0, data.Data.Length - 1);
-
-							data.Data = messageData;
-
-							// 전송 로그 업데이트
-							UpdateLog($"{data.Client.RemoteEndPoint}에서 수신:{data}");
-
-							// 전송자를 제외한 모든 클라이언트에게 데이터 전송
-							SendDataToAllClient(data, data.ToString());
-						}
-						// 메타데이터 값이 true(file)라면
-						else if (data.Data[0] == 1)
-						{
-							data.Data = null;
-							// 전송 로그 업데이트
-							UpdateLog($"{data.Client.RemoteEndPoint}에서 파일 수신:{"파일 수신"}");
-						}
+						File.Delete(SaveFilePath);
 					}
 				}
 
+				if (dataType == (int)DataType.File)
+				{
+					// 이진데이터로 파일 작성
+					BinaryWriter bw = new BinaryWriter(File.Open(SaveFilePath, FileMode.Append));
+					bw.Write(data.Data, 8 + fileNameLen, length - (8 + fileNameLen));
+					bw.Close();
+					UpdateLog($"수신된 {fileName} 임시저장 완료");
+
+					// 여기서 함수 호출 필요(고용량 데이터 수신 송신시 분할할 필요도 있을 것임)
+					//SendFileDataToAllClient(data, fileName, SaveFilePath);
+				}
 				// 서버가 실행중인경우 계속해서 접속중인 클라이언트로 부터 데이터 수신 대기
 				if (Server != null && Server.Active)
 				{
@@ -299,6 +367,7 @@ namespace ServerApp
 
 			catch (Exception) { }
 		}
+
 		/// <summary>
 		/// 현재 서버 상태를 표시
 		/// </summary>

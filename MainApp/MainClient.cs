@@ -26,6 +26,11 @@ namespace MainApp
 		/// </summary>
 		private TcpClientExtension Client { get; set; }
 
+		/// <summary>
+		/// 전송할 데이터의 타입 구분
+		/// </summary>
+		private enum DataType { TEXT = 1, File };
+
 		public MainClient()
 		{
 			InitializeComponent();
@@ -44,7 +49,7 @@ namespace MainApp
 		private void MainClient_FormClosed(object sender, FormClosedEventArgs e)
 		{
 			// 클라이언트가 서버에 접속중인 경우 종료
-			if(Client != null)
+			if (Client != null)
 			{
 				Client.Client.Close();
 				Client.Client.Dispose();
@@ -94,7 +99,8 @@ namespace MainApp
 				btnConnect.Enabled = false;
 				btnDisconnect.Enabled = true;
 				btnSendMessage.Enabled = true;
-			} 
+				btnFileUpload.Enabled = true;
+			}
 			catch (Exception ex)
 			{
 				UpdateLog(ex.Message);
@@ -127,6 +133,8 @@ namespace MainApp
 			btnConnect.Enabled = true;
 			btnDisconnect.Enabled = false;
 			btnSendMessage.Enabled = false;
+			btnFileUpload.Enabled = false;
+			btnFileSend.Enabled = false;
 		}
 
 		/// <summary>
@@ -138,32 +146,30 @@ namespace MainApp
 		{
 			try
 			{
+				// 전송할 데이터 타입 설정
+				var dataType = BitConverter.GetBytes((int)DataType.TEXT);
 				// 전송할 메시지 데이터 설정
 				var message = Encoding.UTF8.GetBytes(textNickName.Text + " : " + textMessage.Text);
 
-				// 파일여부 검증용 메타데이터(false)
-				var isFile = BitConverter.GetBytes(false);
+				// 데이터 조립 type(TEXT) 4 byte + message
+				byte[] sendData = new byte[dataType.Length + message.Length];
 
-				// 메타데이터를 삽입할 바이트 객체 bool(1byte) + message.Length
-				var messageData = new byte[1 + message.Length];
+				dataType.CopyTo(sendData, 0);
+				message.CopyTo(sendData, 4);
 
-				// 배열 앞부분에 메타데이터를 삽입한다
-				isFile.CopyTo(messageData, 0);
-				// 메타데이터 뒤에 텍스트 데이터 삽입
-				message.CopyTo(messageData, 1);
-
-				// 서버에 데이터 송신
-				Client?.Socket.Send(messageData);
+				// 메시지 송신
+				Client?.Socket.Send(sendData);
 
 				// 로그 출력
-				UpdateLog($"송신>>{Encoding.UTF8.GetString(message)}");
+				UpdateLog($"메시지 송신>>{Encoding.UTF8.GetString(message)}");
 
 				// 메시지 창 초기화
 				textMessage.Text = "";
 				textMessage.Focus();
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
+				UpdateLog(ex.Message);
 				UpdateLog("메시지 전송에 실패했습니다");
 			}
 		}
@@ -182,17 +188,26 @@ namespace MainApp
 				// 연결이 끊어진경우 데이터 수신 함수 종료
 				if (data.Client.Socket == null) return;
 
-				// 서버로 부터 데이터 수신 처리
-				data.Client.Socket?.EndReceive(result);
+				// 서버로 부터 데이터 수신 완료 처리
+				var length = data.Client.Socket.EndReceive(result);
 
-				// 수신받은 데이터 로그에 출력
-				UpdateLog($"서버로 부터 데이터 수신<<{data}");
+				// 메타데이터 타입 가져오기
+				var dataType = BitConverter.ToInt32(data.Data, 0);
+
+				if (dataType == (int)DataType.TEXT)
+				{
+					// 메타데이터 빼고 텍스트 추출
+					var message = Encoding.UTF8.GetString(data.Data, 4, length - 4);
+
+					// 전송 로그 업데이트
+					UpdateLog($"서버로 부터 메시지 수신<<{message}");
+				}
 
 				// 다시 서버로 부터 데이터 수신 대기
 				data.Client.Socket.BeginReceive(data.Data, 0, data.Data.Length, SocketFlags.None, ReceiveCallback, data);
 			}
 
-			catch (Exception) 
+			catch (Exception)
 			{
 				UpdateLog("서버로 부터 접속이 끊어졌습니다");
 
@@ -205,6 +220,8 @@ namespace MainApp
 					btnConnect.Enabled = true;
 					btnDisconnect.Enabled = false;
 					btnSendMessage.Enabled = false;
+					btnFileUpload.Enabled = false;
+					btnFileSend.Enabled = false;
 				}));
 			}
 		}
@@ -241,7 +258,7 @@ namespace MainApp
 			}
 
 			// 아이피 주소가 유효한지 확인
-			if(!IPAddress.TryParse(ip, out IPAddress _))
+			if (!IPAddress.TryParse(ip, out IPAddress _))
 			{
 				MessageBox.Show("유효한 아이피 주소가 아닙니다");
 				return false;
@@ -274,53 +291,75 @@ namespace MainApp
 			Invoke(new Action(() => ssServerStatusLabel.Text = $"서버 접속 상태 : {(connectionStatus ? "접속중" : "미접속")}"));
 		}
 
+		/// <summary>
+		/// 파일 전송 액션
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
 		private void btnFileSend_Click(object sender, EventArgs e)
 		{
 			try
 			{
-				using (OpenFileDialog openFileDialog = new OpenFileDialog())
-				{
-					if (openFileDialog.ShowDialog() == DialogResult.OK)
-					{
-						// 파일 경로
-						var filePath = openFileDialog.FileName;
+				// 파일 경로
+				var filePath = lbFileName.Text;
+				// 파일명
+				var fileName = Path.GetFileName(filePath);
+				// 파일이름 인코딩
+				var fileNameData = Encoding.UTF8.GetBytes(fileName);
 
-						// 파일여부 검증용 메타데이터(true)
-						var isFile = BitConverter.GetBytes(true);
-						// 파일명
-						var fileName = Path.GetFileName(filePath);
+				// 전송할 데이터 타입 설정
+				var dataType = BitConverter.GetBytes((int)DataType.File);
+				// 파일이름 바이너리 데이터
+				var fileNameLen = BitConverter.GetBytes(fileNameData.Length);
+				// 파일의 바이너리 데이터
+				var fileData = File.ReadAllBytes(filePath);
 
-						// 파일이름 인코딩
-						var fileNameData = Encoding.UTF8.GetBytes(fileName);
-						// 파일이름 바이너리 데이터
-						var fileNameLen = BitConverter.GetBytes(fileNameData.Length);
+				// 데이터 조립 type(File) 4 byte, 파일이름데이터, 파일이름, 파일데이터)
+				var sendData = new byte[dataType.Length + fileNameLen.Length + fileNameData.Length + fileData.Length];
 
-						// 파일의 바이너리 데이터
-						var fileData = File.ReadAllBytes(filePath);
+				// 배열 앞부분에 메타데이터 삽입
+				dataType.CopyTo(sendData, 0);
+				// 메타데이터 뒷부분에 파일이름 데이터 삽입
+				fileNameLen.CopyTo(sendData, 4);
+				// 파일이름 바이너리 데이터 뒷부분에 파일이름 삽입
+				fileNameData.CopyTo(sendData, 8);
+				// 파일이름 및 파일이름 길이 뒷부분에 파일 데이터 삽입
+				fileData.CopyTo(sendData, 8 + fileNameData.Length);
 
-						// 바이트 배열 객체생성(메타데이터(bool, 1byte) + 파일이름데이터, 파일이름길이, 파일데이터)
-						var sendData = new byte[1 + fileNameData.Length + fileNameLen.Length + fileData.Length];
+				// 서버에 데이터 송신
+				Client?.Socket.Send(sendData);
 
-						// 배열 앞부분에 메타데이터 삽입
-						isFile.CopyTo(sendData, 0);
-						// 메타데이터 뒷부분에 파일이름 데이터 삽입
-						fileNameData.CopyTo(sendData, 1);
-						// 파일이름 바이너리 데이터 뒷부분에 파일이름 길이 삽입
-						fileNameLen.CopyTo(sendData, 1 + fileNameData.Length);
-						// 파일이름 및 파일이름 길이 뒷부분에 파일 데이터 삽입
-						fileData.CopyTo(sendData, 1 + fileNameData.Length + fileNameLen.Length);
-
-						// 서버에 데이터 송신
-						//Client?.Socket.Send(sendData);
-
-						// 로그 출력
-						UpdateLog($"서버에 파일 송신>>{fileName}");
-					}
-				}
+				// 로그 출력
+				UpdateLog($"서버에 파일 송신>>{fileName}");
+			}
+			catch (FileNotFoundException)
+			{
+				MessageBox.Show("파일을 찾을 수 없습니다");
 			}
 			catch (Exception)
 			{
+				MessageBox.Show("파일 전송중 에러 발생");
+			}
+		}
 
+		/// <summary>
+		/// 파일 업로드시 파일 위치 저장
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+		private void btnFileUpload_Click(object sender, EventArgs e)
+		{
+			using (OpenFileDialog openFileDialog = new OpenFileDialog())
+			{
+				if (openFileDialog.ShowDialog() == DialogResult.OK)
+				{
+					Invoke(new Action(() =>
+					{
+						// 라벨에 파일 위치 저장
+						lbFileName.Text = openFileDialog.FileName;
+						btnFileSend.Enabled = true;
+					}));
+				}
 			}
 		}
 	}
