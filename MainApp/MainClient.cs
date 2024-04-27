@@ -31,6 +31,11 @@ namespace MainApp
 		/// </summary>
 		private enum DataType { TEXT = 1, File };
 
+		/// <summary>
+		/// 전송 받은 파일을 저장할 폴더
+		/// </summary>
+		private string SaveFilePath = string.Empty;
+
 		public MainClient()
 		{
 			InitializeComponent();
@@ -191,6 +196,10 @@ namespace MainApp
 				// 서버로 부터 데이터 수신 완료 처리
 				var length = data.Client.Socket.EndReceive(result);
 
+				var fileNameLen = 0;
+
+				var fileName = string.Empty;
+
 				// 메타데이터 타입 가져오기
 				var dataType = BitConverter.ToInt32(data.Data, 0);
 
@@ -201,6 +210,39 @@ namespace MainApp
 
 					// 전송 로그 업데이트
 					UpdateLog($"서버로 부터 메시지 수신<<{message}");
+				}
+				else if (dataType == (int)DataType.File)
+				{
+					// 파일이름 데이터 가져오기(type(File) 4 byte, 파일이름데이터(4 byte), 파일이름, 파일데이터)
+					fileNameLen = BitConverter.ToInt32(data.Data, 4);
+					// 파일 명 추출
+					fileName = Encoding.UTF8.GetString(data.Data, 8, fileNameLen) + "1";
+
+					// 전송 로그 업데이트
+					UpdateLog($"서버로 부터 파일 수신 :{fileName}");
+
+					// 계정의 다운로드 폴더 위치 가져오기
+					var pathUser = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+					var pathDownload = Path.Combine(pathUser, "Downloads");
+
+					// 파일 임시 저장 폴더 저장
+					SaveFilePath = Path.Combine(pathDownload, fileName);
+
+					// 파일 중복 방지 있으면 지움
+					if (File.Exists(SaveFilePath))
+					{
+						File.Delete(SaveFilePath);
+					}
+				}
+
+				if (dataType == (int)DataType.File)
+				{
+					// 이진데이터로 파일 작성
+					BinaryWriter bw = new BinaryWriter(File.Open(SaveFilePath, FileMode.Append));
+					bw.Write(data.Data, 8 + fileNameLen, length - (8 + fileNameLen));
+					bw.Close();
+					UpdateLog($"수신된 {fileName}을 {SaveFilePath}에 저장했습니다");
+
 				}
 
 				// 다시 서버로 부터 데이터 수신 대기

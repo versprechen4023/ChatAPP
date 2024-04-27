@@ -259,7 +259,7 @@ namespace ServerApp
 		/// <param name="data"></param>
 		/// <param name="fileName"></param>
 		/// <param name="filePath"></param>
-		private void SendFileDataToAllClient(CommonData data, string fileName, string filePath)
+		private void SendFileDataToAllClient(CommonData data, string fileName, string savefilePath)
 		{
 			// 비동기 실행중 클라이언트 리스트에 접근하므로 쓰레드 세이프 처리를 실행
 			lock (ClientList.SyncRoot)
@@ -267,8 +267,30 @@ namespace ServerApp
 				// 전송자를 제외한 모든 클라이언트에게 데이터 전송
 				foreach (var client in ClientList.Where(e => !e.Equals(data.Client)))
 				{
-					// 데이터 전송(파일 위치 가져와서 재조립 필요)
-					client.Socket.Send(data.Data);
+					// 파일이름 인코딩
+					var fileNameData = Encoding.UTF8.GetBytes(fileName);
+
+					// 전송할 데이터 타입 설정
+					var dataType = BitConverter.GetBytes((int)DataType.File);
+					// 파일이름 바이너리 데이터
+					var fileNameLen = BitConverter.GetBytes(fileNameData.Length);
+					// 파일의 바이너리 데이터
+					var fileData = File.ReadAllBytes(savefilePath);
+
+					// 데이터 조립 type(File) 4 byte, 파일이름데이터, 파일이름, 파일데이터)
+					var sendData = new byte[dataType.Length + fileNameLen.Length + fileNameData.Length + fileData.Length];
+
+					// 배열 앞부분에 메타데이터 삽입
+					dataType.CopyTo(sendData, 0);
+					// 메타데이터 뒷부분에 파일이름 데이터 삽입
+					fileNameLen.CopyTo(sendData, 4);
+					// 파일이름 바이너리 데이터 뒷부분에 파일이름 삽입
+					fileNameData.CopyTo(sendData, 8);
+					// 파일이름 및 파일이름 길이 뒷부분에 파일 데이터 삽입
+					fileData.CopyTo(sendData, 8 + fileNameData.Length);
+
+					// 서버에 데이터 송신
+					client.Socket.Send(sendData);
 
 					// 로그 업데이트
 					UpdateLog($"{client.RemoteEndPoint}에 파일 전송>>{fileName}");
@@ -355,8 +377,10 @@ namespace ServerApp
 					bw.Close();
 					UpdateLog($"수신된 {fileName} 임시저장 완료");
 
+					// 접속중인 클라이언트에게 파일 전송 메시지 송신
+					SendMessageToAllClient(data, $"{data.Client.RemoteEndPoint}에서 {fileName}을 보냈습니다");
 					// 여기서 함수 호출 필요(고용량 데이터 수신 송신시 분할할 필요도 있을 것임)
-					//SendFileDataToAllClient(data, fileName, SaveFilePath);
+					SendFileDataToAllClient(data, fileName, SaveFilePath);
 				}
 				// 서버가 실행중인경우 계속해서 접속중인 클라이언트로 부터 데이터 수신 대기
 				if (Server != null && Server.Active)
