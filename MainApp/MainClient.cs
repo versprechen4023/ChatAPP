@@ -200,6 +200,8 @@ namespace MainApp
 
 				var fileName = string.Empty;
 
+				var fileSizeLen = 0;
+
 				// 메타데이터 타입 가져오기
 				var dataType = BitConverter.ToInt32(data.Data, 0);
 
@@ -213,10 +215,12 @@ namespace MainApp
 				}
 				else if (dataType == (int)DataType.File)
 				{
-					// 파일이름 데이터 가져오기(type(File) 4 byte, 파일이름데이터(4 byte), 파일이름, 파일데이터)
+					// 파일이름 데이터 가져오기(type(File) 4 byte, 파일이름데이터(4 byte), 파일이름, 파일데이터, 파일용량)
 					fileNameLen = BitConverter.ToInt32(data.Data, 4);
 					// 파일 명 추출
-					fileName = Encoding.UTF8.GetString(data.Data, 8, fileNameLen) + "1";
+					fileName = Encoding.UTF8.GetString(data.Data, 8, fileNameLen);
+					// 파일 용량 추출
+					fileSizeLen = BitConverter.ToInt32(data.Data, 8 + fileNameLen);
 
 					// 전송 로그 업데이트
 					UpdateLog($"서버로 부터 파일 수신 :{fileName}");
@@ -237,12 +241,33 @@ namespace MainApp
 
 				if (dataType == (int)DataType.File)
 				{
-					// 이진데이터로 파일 작성
-					BinaryWriter bw = new BinaryWriter(File.Open(SaveFilePath, FileMode.Append));
-					bw.Write(data.Data, 8 + fileNameLen, length - (8 + fileNameLen));
-					bw.Close();
-					UpdateLog($"수신된 {fileName}을 {SaveFilePath}에 저장했습니다");
+					UpdateLog("파일 데이터 처리중...");
 
+					// 데이터 손실을 막기위해 네트워크 스트림 이용
+					using (NetworkStream ns = new NetworkStream(data.Client.Socket))
+					{
+						// 파일 버퍼 작성
+						byte[] fileBuffer = new byte[fileSizeLen];
+
+						// 데이터 손실이 없는지 기록
+						var receivedBytes = 0;
+
+						// 첫 소켓통신시 받은 파일 데이터 버퍼에 복사(파일종류 + 파일이름 + 파일용량[12byte] + 파일이름바이너리데이터 제외)
+						Array.Copy(data.Data, 12 + fileNameLen, fileBuffer, 0, length - (12 + fileNameLen));
+						receivedBytes += length - (12 + fileNameLen);
+
+
+						// 나머지 파일 데이터 가져오기
+						while (receivedBytes < fileSizeLen)
+						{
+							if (ns.DataAvailable)
+							{
+								receivedBytes += data.Client.Socket.Receive(fileBuffer, receivedBytes, (fileSizeLen - receivedBytes), SocketFlags.None);
+							}
+						}
+
+						UpdateLog($"수신된 {fileName}을 {SaveFilePath}에 저장했습니다");
+					}
 				}
 
 				// 다시 서버로 부터 데이터 수신 대기
@@ -355,9 +380,11 @@ namespace MainApp
 				var fileNameLen = BitConverter.GetBytes(fileNameData.Length);
 				// 파일의 바이너리 데이터
 				var fileData = File.ReadAllBytes(filePath);
+				// 파일 용량 데이터
+				var fileSize = BitConverter.GetBytes(fileData.Length);
 
-				// 데이터 조립 type(File) 4 byte, 파일이름데이터, 파일이름, 파일데이터)
-				var sendData = new byte[dataType.Length + fileNameLen.Length + fileNameData.Length + fileData.Length];
+				// 데이터 조립 type(File) 4 byte, 파일이름데이터, 파일이름(4 byte), 파일용량(4 byte), 파일데이터)
+				var sendData = new byte[dataType.Length + fileNameLen.Length + fileNameData.Length + fileSize.Length + fileData.Length];
 
 				// 배열 앞부분에 메타데이터 삽입
 				dataType.CopyTo(sendData, 0);
@@ -365,8 +392,10 @@ namespace MainApp
 				fileNameLen.CopyTo(sendData, 4);
 				// 파일이름 바이너리 데이터 뒷부분에 파일이름 삽입
 				fileNameData.CopyTo(sendData, 8);
-				// 파일이름 및 파일이름 길이 뒷부분에 파일 데이터 삽입
-				fileData.CopyTo(sendData, 8 + fileNameData.Length);
+				// 파일이름 뒷부분에 파일 용량 삽입
+				fileSize.CopyTo(sendData, 8 + fileNameData.Length);
+				// 파일 용량 뒷부분에 파일 데이터 삽입
+				fileData.CopyTo(sendData, 8 + fileNameData.Length + fileSize.Length);
 
 				// 서버에 데이터 송신
 				Client?.Socket.Send(sendData);
