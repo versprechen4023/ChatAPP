@@ -37,7 +37,7 @@ namespace ServerApp
 		/// <summary>
 		/// 전송할 데이터의 타입 구분
 		/// </summary>
-		private enum DataType { TEXT = 1, File };
+		private enum DataType { TEXT = 1, File, CallBackFileAccept, CallBackFileSended};
 
 		/// <summary>
 		/// 전송 받은 파일을 저장할 폴더
@@ -305,6 +305,58 @@ namespace ServerApp
 		}
 
 		/// <summary>
+		/// 클라이언트로 파일을 송신 받을 경우 송신 확인 콜백 함수
+		/// </summary>
+		/// <param name="data"></param>
+		/// <param name="fileName"></param>
+		private void FileReceiveCallbackToClient(CommonData data, string fileName)
+		{
+			// 비동기 실행중 클라이언트 리스트에 접근하므로 쓰레드 세이프 처리를 실행
+			lock (ClientList.SyncRoot)
+			{
+				// 전송자에게 콜백 메시지 전송
+				foreach (var client in ClientList.Where(e => e.Equals(data.Client)))
+				{
+					// 데이터 재조립 후 클라이언트에 발송
+					var dataType = BitConverter.GetBytes((int)DataType.CallBackFileAccept);
+					var message = Encoding.UTF8.GetBytes($"서버에서 {fileName}을 수신하여 처리 중 입니다");
+					byte[] sendData = new byte[dataType.Length + message.Length];
+					dataType.CopyTo(sendData, 0);
+					message.CopyTo(sendData, 4);
+
+					// 메시지 전송
+					client.Socket.Send(sendData);
+				}
+			}
+		}
+
+		/// <summary>
+		/// 서버에서 파일을 다른 클라이언트에 전송완료 한 경우 콜백 함수
+		/// </summary>
+		/// <param name="data"></param>
+		/// <param name="fileName"></param>
+		private void FileSendedCallbackToClient(CommonData data, string fileName)
+		{
+			// 비동기 실행중 클라이언트 리스트에 접근하므로 쓰레드 세이프 처리를 실행
+			lock (ClientList.SyncRoot)
+			{
+				// 전송자에게 콜백 메시지 전송
+				foreach (var client in ClientList.Where(e => e.Equals(data.Client)))
+				{
+					// 데이터 재조립 후 클라이언트에 발송
+					var dataType = BitConverter.GetBytes((int)DataType.CallBackFileSended);
+					var message = Encoding.UTF8.GetBytes($"서버에서 {fileName}을 다른 클라이언트에게 송신했습니다");
+					byte[] sendData = new byte[dataType.Length + message.Length];
+					dataType.CopyTo(sendData, 0);
+					message.CopyTo(sendData, 4);
+
+					// 메시지 전송
+					client.Socket.Send(sendData);
+				}
+			}
+		}
+
+		/// <summary>
 		/// 접속중인 클라이언트로부터 데이터를 처리하는 함수
 		/// </summary>
 		/// <param name="result"></param>
@@ -383,6 +435,9 @@ namespace ServerApp
 				{
 					UpdateLog("파일 데이터 처리중...");
 
+					// 파일을 보낸 클라이언트한테 파일 수신 확인 메시지 발송
+					FileReceiveCallbackToClient(data, fileName);
+
 					// 데이터 손실을 막기위해 네트워크 스트림 이용
 					using (NetworkStream ns = new NetworkStream(data.Client.Socket))
 					{
@@ -417,6 +472,8 @@ namespace ServerApp
 						SendMessageToAllClient(data, $"{data.Client.RemoteEndPoint}에서 {fileName}을 보냈습니다");
 						// 여기서 함수 호출 필요(고용량 데이터 수신 송신시 분할할 필요도 있을 것임)
 						SendFileDataToAllClient(data, fileName, SaveFilePath);
+						// 파일을 보낸 클라이언트에게 다른 클라이언트에게 파일을 송신했다는 확인 메시지 발송
+						FileSendedCallbackToClient(data, fileName);
 					}
 			
 				}

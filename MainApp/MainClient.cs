@@ -29,12 +29,27 @@ namespace MainApp
 		/// <summary>
 		/// 전송할 데이터의 타입 구분
 		/// </summary>
-		private enum DataType { TEXT = 1, File };
+		private enum DataType { TEXT = 1, File, CallBackFileAccept, CallBackFileSended };
 
 		/// <summary>
-		/// 전송 받은 파일을 저장할 폴더
+		/// 서버에 업로드할 파일 경로
 		/// </summary>
-		private string SaveFilePath = string.Empty;
+		private string UploadFilePath = string.Empty;
+
+		/// <summary>
+		/// 서버에서 받은 파일 버퍼
+		/// </summary>
+		private byte[] DownloadFileBuffer;
+
+		/// <summary>
+		/// 서버에서 받은 파일 이름
+		/// </summary>
+		private string DownloadFileName = string.Empty;
+
+		/// <summary>
+		/// 서버에서 받은 파일 용량
+		/// </summary>
+		private int DownloadFileSizeLen = 0;
 
 		public MainClient()
 		{
@@ -211,7 +226,7 @@ namespace MainApp
 					var message = Encoding.UTF8.GetString(data.Data, 4, length - 4);
 
 					// 전송 로그 업데이트
-					UpdateLog($"서버로 부터 메시지 수신<<{message}");
+					UpdateLog($"수신<<{message}");
 				}
 				else if (dataType == (int)DataType.File)
 				{
@@ -223,20 +238,21 @@ namespace MainApp
 					fileSizeLen = BitConverter.ToInt32(data.Data, 8 + fileNameLen);
 
 					// 전송 로그 업데이트
-					UpdateLog($"서버로 부터 파일 수신 :{fileName}");
+					UpdateLog($"서버로 부터 파일 수신 : 파일명 : {fileName} 파일 크기 : {fileSizeLen}byte");
+				}
+				else if(dataType == (int)DataType.CallBackFileAccept)
+				{
+					// 메타데이터 빼고 텍스트 추출
+					var message = Encoding.UTF8.GetString(data.Data, 4, length - 4);
 
-					// 계정의 다운로드 폴더 위치 가져오기
-					var pathUser = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-					var pathDownload = Path.Combine(pathUser, "Downloads");
+					SetFileSendAction(message, false);
+				}
+				else if (dataType == (int)DataType.CallBackFileSended)
+				{
+					// 메타데이터 빼고 텍스트 추출
+					var message = Encoding.UTF8.GetString(data.Data, 4, length - 4);
 
-					// 파일 임시 저장 폴더 저장
-					SaveFilePath = Path.Combine(pathDownload, fileName);
-
-					// 파일 중복 방지 있으면 지움
-					if (File.Exists(SaveFilePath))
-					{
-						File.Delete(SaveFilePath);
-					}
+					SetFileSendAction(message, true);
 				}
 
 				if (dataType == (int)DataType.File)
@@ -266,7 +282,17 @@ namespace MainApp
 							}
 						}
 
-						UpdateLog($"수신된 {fileName}을 {SaveFilePath}에 저장했습니다");
+						// 전역 변수에 파일 데이터 저장
+						DownloadFileBuffer = fileBuffer;
+						DownloadFileName = fileName;
+						DownloadFileSizeLen = fileSizeLen;
+
+						UpdateLog("서버로부터 파일을 수신완료 했습니다");
+
+						Invoke(new Action(() =>
+						{
+							btnFileDownload.Enabled = true;
+						}));
 					}
 				}
 
@@ -359,6 +385,23 @@ namespace MainApp
 		}
 
 		/// <summary>
+		/// 파일 송수신시 서버로부터 오는 콜백 처리 함수
+		/// </summary>
+		/// <param name="message"></param>
+		/// <param name="status"></param>
+		private void SetFileSendAction(string message, bool status)
+		{
+			// 전송 로그 업데이트
+			UpdateLog($"서버로 부터 메시지 수신<<{message}");
+
+			Invoke(new Action(() =>
+			{
+				btnFileUpload.Enabled = status;
+				btnFileSend.Enabled = status;
+			}));
+		}
+
+		/// <summary>
 		/// 파일 전송 액션
 		/// </summary>
 		/// <param name="sender"></param>
@@ -368,7 +411,7 @@ namespace MainApp
 			try
 			{
 				// 파일 경로
-				var filePath = lbFileName.Text;
+				var filePath = UploadFilePath;
 				// 파일명
 				var fileName = Path.GetFileName(filePath);
 				// 파일이름 인코딩
@@ -424,12 +467,45 @@ namespace MainApp
 			{
 				if (openFileDialog.ShowDialog() == DialogResult.OK)
 				{
+					// 라벨에 파일 위치 저장
+					UploadFilePath = openFileDialog.FileName;
+
 					Invoke(new Action(() =>
 					{
-						// 라벨에 파일 위치 저장
-						lbFileName.Text = openFileDialog.FileName;
+						// 라벨에 파일명 표시
+						lbFileName.Text = Path.GetFileName(UploadFilePath);
 						btnFileSend.Enabled = true;
 					}));
+				}
+			}
+		}
+
+		/// <summary>
+		/// 버퍼에 저장되어있는 파일 저장 함수
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+		private void btnFileDownload_Click(object sender, EventArgs e)
+		{
+			using(SaveFileDialog saveFileDialog = new SaveFileDialog())
+			{
+				// 다이얼로그 로드시 최초로 보여주는 저장위치(C드라이브)
+				saveFileDialog.InitialDirectory = @"C:\";
+				// 초기 저장이름
+				saveFileDialog.FileName = DownloadFileName;
+				// 파일 필터
+				saveFileDialog.Filter = "모든 파일 (*.*)|*.*";
+
+				if (saveFileDialog.ShowDialog() == DialogResult.OK)
+				{
+					if (File.Exists(saveFileDialog.FileName))
+					{
+						File.Delete(saveFileDialog.FileName);
+					}
+					// 이진데이터로 파일 작성
+					BinaryWriter bw = new BinaryWriter(File.Open(saveFileDialog.FileName, FileMode.Append));
+					bw.Write(DownloadFileBuffer);
+					bw.Close();
 				}
 			}
 		}

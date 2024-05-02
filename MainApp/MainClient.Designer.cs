@@ -36,25 +36,28 @@
 			this.labelPort = new System.Windows.Forms.Label();
 			this.labelIp = new System.Windows.Forms.Label();
 			this.gbInfo = new System.Windows.Forms.GroupBox();
-			this.btnFileSend = new System.Windows.Forms.Button();
 			this.textNickName = new System.Windows.Forms.TextBox();
 			this.lbNickName = new System.Windows.Forms.Label();
 			this.btnSendMessage = new System.Windows.Forms.Button();
 			this.textMessage = new System.Windows.Forms.TextBox();
 			this.lbMessage = new System.Windows.Forms.Label();
+			this.btnFileSend = new System.Windows.Forms.Button();
 			this.gbLog = new System.Windows.Forms.GroupBox();
 			this.lbLog = new System.Windows.Forms.ListBox();
 			this.ssServerStatus = new System.Windows.Forms.StatusStrip();
 			this.ssServerStatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
 			this.gbFileUpload = new System.Windows.Forms.GroupBox();
-			this.lbFilelabel = new System.Windows.Forms.Label();
-			this.btnFileUpload = new System.Windows.Forms.Button();
 			this.lbFileName = new System.Windows.Forms.Label();
+			this.btnFileUpload = new System.Windows.Forms.Button();
+			this.lbFilelabel = new System.Windows.Forms.Label();
+			this.btnFileDownload = new System.Windows.Forms.Button();
+			this.groupBox1 = new System.Windows.Forms.GroupBox();
 			this.gbMain.SuspendLayout();
 			this.gbInfo.SuspendLayout();
 			this.gbLog.SuspendLayout();
 			this.ssServerStatus.SuspendLayout();
 			this.gbFileUpload.SuspendLayout();
+			this.groupBox1.SuspendLayout();
 			this.SuspendLayout();
 			// 
 			// gbMain
@@ -149,17 +152,6 @@
 			this.gbInfo.TabStop = false;
 			this.gbInfo.Text = "인포";
 			// 
-			// btnFileSend
-			// 
-			this.btnFileSend.Enabled = false;
-			this.btnFileSend.Location = new System.Drawing.Point(113, 46);
-			this.btnFileSend.Name = "btnFileSend";
-			this.btnFileSend.Size = new System.Drawing.Size(84, 23);
-			this.btnFileSend.TabIndex = 5;
-			this.btnFileSend.Text = "파일 전송";
-			this.btnFileSend.UseVisualStyleBackColor = true;
-			this.btnFileSend.Click += new System.EventHandler(this.btnFileSend_Click);
-			// 
 			// textNickName
 			// 
 			this.textNickName.Location = new System.Drawing.Point(87, 17);
@@ -206,6 +198,17 @@
 			this.lbMessage.TabIndex = 0;
 			this.lbMessage.Text = "메세지 내용";
 			// 
+			// btnFileSend
+			// 
+			this.btnFileSend.Enabled = false;
+			this.btnFileSend.Location = new System.Drawing.Point(113, 46);
+			this.btnFileSend.Name = "btnFileSend";
+			this.btnFileSend.Size = new System.Drawing.Size(84, 23);
+			this.btnFileSend.TabIndex = 5;
+			this.btnFileSend.Text = "파일 전송";
+			this.btnFileSend.UseVisualStyleBackColor = true;
+			this.btnFileSend.Click += new System.EventHandler(this.btnFileSend_Click);
+			// 
 			// gbLog
 			// 
 			this.gbLog.Controls.Add(this.lbLog);
@@ -213,7 +216,7 @@
 			this.gbLog.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
 			this.gbLog.Name = "gbLog";
 			this.gbLog.Padding = new System.Windows.Forms.Padding(3, 2, 3, 2);
-			this.gbLog.Size = new System.Drawing.Size(679, 170);
+			this.gbLog.Size = new System.Drawing.Size(583, 170);
 			this.gbLog.TabIndex = 0;
 			this.gbLog.TabStop = false;
 			this.gbLog.Text = "로그";
@@ -225,7 +228,7 @@
 			this.lbLog.Location = new System.Drawing.Point(5, 19);
 			this.lbLog.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
 			this.lbLog.Name = "lbLog";
-			this.lbLog.Size = new System.Drawing.Size(669, 148);
+			this.lbLog.Size = new System.Drawing.Size(570, 148);
 			this.lbLog.TabIndex = 0;
 			// 
 			// ssServerStatus
@@ -258,14 +261,14 @@
 			this.gbFileUpload.TabStop = false;
 			this.gbFileUpload.Text = "파일 업로드";
 			// 
-			// lbFilelabel
+			// lbFileName
 			// 
-			this.lbFilelabel.AutoSize = true;
-			this.lbFilelabel.Location = new System.Drawing.Point(6, 25);
-			this.lbFilelabel.Name = "lbFilelabel";
-			this.lbFilelabel.Size = new System.Drawing.Size(49, 12);
-			this.lbFilelabel.TabIndex = 6;
-			this.lbFilelabel.Text = "파일명 :";
+			this.lbFileName.AutoSize = true;
+			this.lbFileName.Location = new System.Drawing.Point(58, 25);
+			this.lbFileName.Name = "lbFileName";
+			this.lbFileName.Size = new System.Drawing.Size(29, 12);
+			this.lbFileName.TabIndex = 8;
+			this.lbFileName.Text = "없음";
 			// 
 			// btnFileUpload
 			// 
@@ -278,26 +281,50 @@
 			this.btnFileUpload.UseVisualStyleBackColor = true;
 			this.btnFileUpload.Click += new System.EventHandler(this.btnFileUpload_Click);
 			// 
-			// lbFileName
+			// lbFilelabel
 			// 
-			this.lbFileName.AutoSize = true;
-			this.lbFileName.Location = new System.Drawing.Point(58, 25);
-			this.lbFileName.Name = "lbFileName";
-			this.lbFileName.Size = new System.Drawing.Size(29, 12);
-			this.lbFileName.TabIndex = 8;
-			this.lbFileName.Text = "없음";
+			this.lbFilelabel.AutoSize = true;
+			this.lbFilelabel.Location = new System.Drawing.Point(6, 25);
+			this.lbFilelabel.Name = "lbFilelabel";
+			this.lbFilelabel.Size = new System.Drawing.Size(49, 12);
+			this.lbFilelabel.TabIndex = 6;
+			this.lbFilelabel.Text = "파일명 :";
+			// 
+			// btnFileDownload
+			// 
+			this.btnFileDownload.Enabled = false;
+			this.btnFileDownload.Location = new System.Drawing.Point(6, 20);
+			this.btnFileDownload.Name = "btnFileDownload";
+			this.btnFileDownload.Size = new System.Drawing.Size(77, 28);
+			this.btnFileDownload.TabIndex = 0;
+			this.btnFileDownload.Text = "파일 저장";
+			this.btnFileDownload.UseVisualStyleBackColor = true;
+			this.btnFileDownload.Click += new System.EventHandler(this.btnFileDownload_Click);
+			// 
+			// groupBox1
+			// 
+			this.groupBox1.Controls.Add(this.btnFileDownload);
+			this.groupBox1.Location = new System.Drawing.Point(599, 169);
+			this.groupBox1.Name = "groupBox1";
+			this.groupBox1.Size = new System.Drawing.Size(89, 166);
+			this.groupBox1.TabIndex = 7;
+			this.groupBox1.TabStop = false;
+			this.groupBox1.Text = "파일 처리";
 			// 
 			// MainClient
 			// 
+			this.AcceptButton = this.btnSendMessage;
 			this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.ClientSize = new System.Drawing.Size(700, 360);
+			this.Controls.Add(this.groupBox1);
 			this.Controls.Add(this.gbFileUpload);
 			this.Controls.Add(this.ssServerStatus);
 			this.Controls.Add(this.gbLog);
 			this.Controls.Add(this.gbInfo);
 			this.Controls.Add(this.gbMain);
 			this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+			this.KeyPreview = true;
 			this.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
 			this.MaximizeBox = false;
 			this.Name = "MainClient";
@@ -313,6 +340,7 @@
 			this.ssServerStatus.PerformLayout();
 			this.gbFileUpload.ResumeLayout(false);
 			this.gbFileUpload.PerformLayout();
+			this.groupBox1.ResumeLayout(false);
 			this.ResumeLayout(false);
 			this.PerformLayout();
 
@@ -342,6 +370,8 @@
 		private System.Windows.Forms.Label lbFileName;
 		private System.Windows.Forms.Button btnFileUpload;
 		private System.Windows.Forms.Label lbFilelabel;
+		private System.Windows.Forms.Button btnFileDownload;
+		private System.Windows.Forms.GroupBox groupBox1;
 	}
 }
 
