@@ -471,6 +471,61 @@ namespace MainApp
 		}
 
 		/// <summary>
+		/// 파일 업로드 비동기 처리
+		/// </summary>
+		/// <param name="filePath"></param>
+		/// <returns></returns>
+		private async Task UploadFile(string filePath)
+		{
+			try
+			{
+				await Task.Run(() =>
+				{
+					UpdateLog("파일 업로드 처리 중입니다...");
+
+					Invoke(new Action(() =>
+					{
+						btnFileUpload.Enabled = false;
+					}));
+
+					// 파일의 바이너리 데이터 읽기 시도
+					UploadFileBuffer = File.ReadAllBytes(filePath);
+
+					// 파일 위치 저장
+					UploadFilePath = filePath;
+
+					Invoke(new Action(() =>
+					{
+						// 라벨에 파일명 표시
+						lbFileName.Text = Path.GetFileName(UploadFilePath);
+						btnFileSend.Enabled = true;
+						btnFileUpload.Enabled = true;
+					}));
+
+					UpdateLog("파일을 서버에 송신할 준비가 되었습니다.");
+				});
+			}
+			catch (IOException)
+			{
+				MessageBox.Show("파일의 용량이 너무 큽니다 파일은 2GB 이하여야 합니다");
+				UpdateLog("파일 업로드에 실패했습니다");
+				Invoke(new Action(() =>
+				{
+					btnFileUpload.Enabled = true;
+				}));
+			}
+			catch(Exception ex)
+			{
+				UpdateLog(ex.Message);
+				UpdateLog("파일 업로드에 실패했습니다");
+				Invoke(new Action(() =>
+				{
+					btnFileUpload.Enabled = true;
+				}));
+			}
+		}
+
+		/// <summary>
 		/// 파일 전송 액션
 		/// </summary>
 		/// <param name="sender"></param>
@@ -542,27 +597,10 @@ namespace MainApp
 		{
 			using (OpenFileDialog openFileDialog = new OpenFileDialog())
 			{
-				try
+				if (openFileDialog.ShowDialog() == DialogResult.OK)
 				{
-					if (openFileDialog.ShowDialog() == DialogResult.OK)
-					{
-						// 파일의 바이너리 데이터 읽기 시도
-						UploadFileBuffer = File.ReadAllBytes(openFileDialog.FileName);
-
-						// 라벨에 파일 위치 저장
-						UploadFilePath = openFileDialog.FileName;
-
-						Invoke(new Action(() =>
-						{
-							// 라벨에 파일명 표시
-							lbFileName.Text = Path.GetFileName(UploadFilePath);
-							btnFileSend.Enabled = true;
-						}));
-					}
-				}
-				catch(IOException)
-				{
-					MessageBox.Show("파일의 용량이 너무 큽니다 파일은 2GB 이하여야 합니다");
+					// 업로드 파일 처리 비동기 실행
+					_ = UploadFile(openFileDialog.FileName);
 				}
 			}
 		}
