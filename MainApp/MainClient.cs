@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -12,6 +13,7 @@ using System.ServiceModel;
 using System.ServiceModel.Channels;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static System.Net.WebRequestMethods;
@@ -37,6 +39,11 @@ namespace MainApp
 		private string UploadFilePath = string.Empty;
 
 		/// <summary>
+		/// 서버에 업로드할 파일 버퍼
+		/// </summary>
+		private byte[] UploadFileBuffer;
+
+		/// <summary>
 		/// 서버에서 받은 파일 버퍼
 		/// </summary>
 		private byte[] DownloadFileBuffer;
@@ -58,6 +65,7 @@ namespace MainApp
 
 		private void MainClient_Load(object sender, EventArgs e)
 		{
+			textNickName.Text = GetPid();
 			SetConnectionStatus(false);
 		}
 
@@ -143,18 +151,11 @@ namespace MainApp
 			Client.Client.Dispose();
 			Client = null;
 
-			// 서버 접속 상태를 미접속으로 변경
-			SetConnectionStatus(false);
-
 			// 로그 출력
 			UpdateLog("서버와 연결이 종료되었습니다");
 
-
-			btnConnect.Enabled = true;
-			btnDisconnect.Enabled = false;
-			btnSendMessage.Enabled = false;
-			btnFileUpload.Enabled = false;
-			btnFileSend.Enabled = false;
+			// 메모리 및 설정 초기화
+			ResetClient();
 		}
 
 		/// <summary>
@@ -187,9 +188,8 @@ namespace MainApp
 				textMessage.Text = "";
 				textMessage.Focus();
 			}
-			catch (Exception ex)
+			catch (Exception)
 			{
-				UpdateLog(ex.Message);
 				UpdateLog("메시지 전송에 실패했습니다");
 			}
 		}
@@ -238,9 +238,9 @@ namespace MainApp
 					fileSizeLen = BitConverter.ToInt32(data.Data, 8 + fileNameLen);
 
 					// 전송 로그 업데이트
-					UpdateLog($"서버로 부터 파일 수신 : 파일명 : {fileName} 파일 크기 : {fileSizeLen}byte");
+					UpdateLog($"서버로 부터 파일 수신 : 파일명 : {fileName} 파일 크기 : {CalculateFileSize(fileSizeLen)}");
 				}
-				else if(dataType == (int)DataType.CallBackFileAccept)
+				else if (dataType == (int)DataType.CallBackFileAccept)
 				{
 					// 메타데이터 빼고 텍스트 추출
 					var message = Encoding.UTF8.GetString(data.Data, 4, length - 4);
@@ -253,6 +253,15 @@ namespace MainApp
 					var message = Encoding.UTF8.GetString(data.Data, 4, length - 4);
 
 					SetFileSendAction(message, true);
+
+					// 메모리 정리
+					UploadFileBuffer = null;
+					UploadFilePath = string.Empty;
+					Invoke(new Action(() =>
+					{
+						// 라벨에 파일명 표시
+						lbFileName.Text = "없음";
+					}));
 				}
 
 				if (dataType == (int)DataType.File)
@@ -278,6 +287,7 @@ namespace MainApp
 						{
 							if (ns.DataAvailable)
 							{
+								Thread.Sleep(2000);
 								receivedBytes += data.Client.Socket.Receive(fileBuffer, receivedBytes, (fileSizeLen - receivedBytes), SocketFlags.None);
 							}
 						}
@@ -303,19 +313,8 @@ namespace MainApp
 			catch (Exception)
 			{
 				UpdateLog("서버로 부터 접속이 끊어졌습니다");
-
-				// 서버 접속 상태를 미접속으로 변경
-				SetConnectionStatus(false);
-
-				// ui 쓰레드는 별도 처리
-				Invoke(new Action(() =>
-				{
-					btnConnect.Enabled = true;
-					btnDisconnect.Enabled = false;
-					btnSendMessage.Enabled = false;
-					btnFileUpload.Enabled = false;
-					btnFileSend.Enabled = false;
-				}));
+				// 메모리 및 설정 초기화
+				ResetClient();
 			}
 		}
 
@@ -385,6 +384,48 @@ namespace MainApp
 		}
 
 		/// <summary>
+		/// 메모리 및 설정 초기화
+		/// </summary>
+		private void ResetClient()
+		{
+			SetConnectionStatus(false);
+
+			Invoke(new Action(() =>
+			{
+				btnConnect.Enabled = true;
+				btnDisconnect.Enabled = false;
+				btnSendMessage.Enabled = false;
+				btnFileUpload.Enabled = false;
+				btnFileSend.Enabled = false;
+				lbFileName.Text = "없음";
+			}));
+
+			UploadFilePath = string.Empty;
+			UploadFileBuffer = null;
+			DownloadFileBuffer = null;
+			DownloadFileName = string.Empty;
+			DownloadFileSizeLen = 0;
+
+			if (Client != null)
+			{
+				Client.Client.Close();
+				Client.Client.Dispose();
+				Client = null;
+			}
+		}
+
+		/// <summary>
+		/// 닉네임에 랜덤번호 부여(프로세스아이디)
+		/// </summary>
+		/// <returns></returns>
+		private string GetPid()
+		{
+			Process currentProcess = Process.GetCurrentProcess();
+
+			return $"익명{currentProcess.Id.ToString()}";
+		}
+
+		/// <summary>
 		/// 파일 송수신시 서버로부터 오는 콜백 처리 함수
 		/// </summary>
 		/// <param name="message"></param>
@@ -397,8 +438,36 @@ namespace MainApp
 			Invoke(new Action(() =>
 			{
 				btnFileUpload.Enabled = status;
-				btnFileSend.Enabled = status;
+				btnFileSend.Enabled = false;
+				if (DownloadFileBuffer != null && DownloadFileBuffer.Length > 0 && status == true)
+				{
+					btnFileDownload.Enabled = status;
+				}
 			}));
+		}
+
+		/// <summary>
+		/// 파일 사이즈 계산
+		/// </summary>
+		/// <param name="fileLength"></param>
+		/// <returns></returns>
+		private string CalculateFileSize(int fileLength)
+		{
+			// 소수점 계산을위해 타입 변환
+			double size = fileLength;
+			// 용량타입 byte부터 GB까지 표현
+			string[] units = { "bytes", "KB", "MB", "GB" };
+			// 추출할 배열의 인덱스
+			int arraytIndex = 0;
+
+			// 계산실행
+			while (size >= 1024 && arraytIndex < units.Length - 1)
+			{
+				size /= 1024;
+				++arraytIndex;
+			}
+			// 0.## + 용량타입으로 반환
+			return string.Format("{0:0.##} {1}", size, units[arraytIndex]);
 		}
 
 		/// <summary>
@@ -422,10 +491,18 @@ namespace MainApp
 				// 파일이름 바이너리 데이터
 				var fileNameLen = BitConverter.GetBytes(fileNameData.Length);
 				// 파일의 바이너리 데이터
-				var fileData = File.ReadAllBytes(filePath);
+				var fileData = UploadFileBuffer;
 				// 파일 용량 데이터
 				var fileSize = BitConverter.GetBytes(fileData.Length);
 
+				// 파일 용량 경고
+				if(fileData.Length > ((1024 * 1024) * 100)) 
+				{
+					if (MessageBox.Show("전송할 파일의 용량이 100MB 이상 입니다.\n고용량의 파일을 전송시 서버에서 처리동안 프로그램이 멈추거나\n메모리 부족시 서버와의 연결이 끊어 질 수 있습니다.\n전송하시겠습니까?", " 경고", MessageBoxButtons.YesNo) == DialogResult.No)
+					{
+						return;
+					}
+				}
 				// 데이터 조립 type(File) 4 byte, 파일이름데이터, 파일이름(4 byte), 파일용량(4 byte), 파일데이터)
 				var sendData = new byte[dataType.Length + fileNameLen.Length + fileNameData.Length + fileSize.Length + fileData.Length];
 
@@ -465,17 +542,27 @@ namespace MainApp
 		{
 			using (OpenFileDialog openFileDialog = new OpenFileDialog())
 			{
-				if (openFileDialog.ShowDialog() == DialogResult.OK)
+				try
 				{
-					// 라벨에 파일 위치 저장
-					UploadFilePath = openFileDialog.FileName;
-
-					Invoke(new Action(() =>
+					if (openFileDialog.ShowDialog() == DialogResult.OK)
 					{
-						// 라벨에 파일명 표시
-						lbFileName.Text = Path.GetFileName(UploadFilePath);
-						btnFileSend.Enabled = true;
-					}));
+						// 파일의 바이너리 데이터 읽기 시도
+						UploadFileBuffer = File.ReadAllBytes(openFileDialog.FileName);
+
+						// 라벨에 파일 위치 저장
+						UploadFilePath = openFileDialog.FileName;
+
+						Invoke(new Action(() =>
+						{
+							// 라벨에 파일명 표시
+							lbFileName.Text = Path.GetFileName(UploadFilePath);
+							btnFileSend.Enabled = true;
+						}));
+					}
+				}
+				catch(IOException)
+				{
+					MessageBox.Show("파일의 용량이 너무 큽니다 파일은 2GB 이하여야 합니다");
 				}
 			}
 		}

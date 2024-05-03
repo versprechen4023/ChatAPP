@@ -415,7 +415,7 @@ namespace ServerApp
 					fileSizeLen = BitConverter.ToInt32(data.Data, 8 + fileNameLen);
 
 					// 전송 로그 업데이트
-					UpdateLog($"{data.Client.RemoteEndPoint}에서 파일 수신 : 파일명 : {fileName} 파일 크기 : {fileSizeLen}byte");
+					UpdateLog($"{data.Client.RemoteEndPoint}에서 파일 수신 : 파일명 : {fileName} 파일 크기 : {CalculateFileSize(fileSizeLen)}");
 
 					// 계정의 다운로드 폴더 위치 가져오기
 					var pathUser = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
@@ -457,6 +457,7 @@ namespace ServerApp
 						{
 							if (ns.DataAvailable)
 							{
+								Thread.Sleep(2000);
 								receivedBytes += data.Client.Socket.Receive(fileBuffer, receivedBytes, (fileSizeLen - receivedBytes), SocketFlags.None);
 							}
 						}
@@ -532,6 +533,30 @@ namespace ServerApp
 				// 항상 최신 로그가 선택되게끔 함
 				lbLog.SelectedIndex = lbLog.Items.Count != -1 ? lbLog.Items.Count - 1 : -1;
 			}));
+		}
+
+		/// <summary>
+		/// 파일 사이즈 계산
+		/// </summary>
+		/// <param name="fileLength"></param>
+		/// <returns></returns>
+		private string CalculateFileSize(int fileLength)
+		{
+			// 소수점 계산을위해 타입 변환
+			double size = fileLength;
+			// 용량타입 byte부터 GB까지 표현
+			string[] units = { "bytes", "KB", "MB", "GB"};
+			// 추출할 배열의 인덱스
+			int arraytIndex = 0;
+
+			// 계산실행
+			while (size >= 1024 && arraytIndex < units.Length - 1)
+			{
+				size /= 1024;
+				++arraytIndex;
+			}
+			// 0.## + 용량타입으로 반환
+			return string.Format("{0:0.##} {1}", size, units[arraytIndex]);
 		}
 	}
 }
