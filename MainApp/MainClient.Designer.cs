@@ -185,6 +185,7 @@
 			// 
 			this.textMessage.Location = new System.Drawing.Point(87, 45);
 			this.textMessage.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+			this.textMessage.MaxLength = 300;
 			this.textMessage.Name = "textMessage";
 			this.textMessage.Size = new System.Drawing.Size(242, 21);
 			this.textMessage.TabIndex = 1;

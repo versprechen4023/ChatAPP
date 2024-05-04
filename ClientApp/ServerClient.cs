@@ -521,10 +521,32 @@ namespace ServerApp
 		}
 
 		/// <summary>
-		/// 로그 업데이트
+		/// 로그 글자 수 계산
 		/// </summary>
 		/// <param name="log"></param>
 		private void UpdateLog(string log)
+		{
+			int max_log_length = 55;
+			int index = 0;
+			while (index < log.Length)
+			{
+				if (log.Length - index > max_log_length)
+				{
+					ShowLog(log.Substring(index, max_log_length));
+				}
+				else
+				{
+					ShowLog(log.Substring(index));
+				}
+				index += max_log_length;
+			}
+		}
+
+		/// <summary>
+		/// 로그 업데이트
+		/// </summary>
+		/// <param name="log"></param>
+		private void ShowLog(string log)
 		{
 			Invoke(new Action(() =>
 			{

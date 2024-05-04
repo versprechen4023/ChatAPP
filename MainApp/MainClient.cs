@@ -9,6 +9,8 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
 using System.ServiceModel;
 using System.ServiceModel.Channels;
 using System.Text;
@@ -253,15 +255,6 @@ namespace MainApp
 					var message = Encoding.UTF8.GetString(data.Data, 4, length - 4);
 
 					SetFileSendAction(message, true);
-
-					// 메모리 정리
-					UploadFileBuffer = null;
-					UploadFilePath = string.Empty;
-					Invoke(new Action(() =>
-					{
-						// 라벨에 파일명 표시
-						lbFileName.Text = "없음";
-					}));
 				}
 
 				if (dataType == (int)DataType.File)
@@ -360,10 +353,32 @@ namespace MainApp
 		}
 
 		/// <summary>
-		/// 로그 업데이트
+		/// 로그 글자 수 계산
 		/// </summary>
 		/// <param name="log"></param>
 		private void UpdateLog(string log)
+		{
+			int max_log_length = 55;
+			int index = 0;
+			while (index < log.Length)
+			{
+				if (log.Length - index > max_log_length)
+				{
+					ShowLog(log.Substring(index, max_log_length));
+				}
+				else
+				{
+					ShowLog(log.Substring(index));
+				}
+				index += max_log_length;
+			}
+		}
+
+		/// <summary>
+		/// 로그 업데이트
+		/// </summary>
+		/// <param name="log"></param>
+		private void ShowLog(string log)
 		{
 			Invoke(new Action(() =>
 			{
@@ -397,6 +412,7 @@ namespace MainApp
 				btnSendMessage.Enabled = false;
 				btnFileUpload.Enabled = false;
 				btnFileSend.Enabled = false;
+				btnFileDownload.Enabled = false;
 				lbFileName.Text = "없음";
 			}));
 
@@ -475,7 +491,7 @@ namespace MainApp
 		/// </summary>
 		/// <param name="filePath"></param>
 		/// <returns></returns>
-		private async Task UploadFile(string filePath)
+		private async Task UploadFileAsync(string filePath)
 		{
 			try
 			{
@@ -497,7 +513,7 @@ namespace MainApp
 					Invoke(new Action(() =>
 					{
 						// 라벨에 파일명 표시
-						lbFileName.Text = Path.GetFileName(UploadFilePath);
+						lbFileName.Text = TryLabelSubString(Path.GetFileName(UploadFilePath), 15);
 						btnFileSend.Enabled = true;
 						btnFileUpload.Enabled = true;
 					}));
@@ -526,6 +542,96 @@ namespace MainApp
 		}
 
 		/// <summary>
+		/// 파일 전송 비동기 처리
+		/// </summary>
+		/// <returns></returns>
+		private async Task SendFileToServerAsync()
+		{
+			try
+			{
+				await Task.Run(() =>
+				{
+					// 송신중 파일 비활성화
+					Invoke(new Action(() =>
+					{
+						btnFileUpload.Enabled = false;
+						btnFileSend.Enabled = false;
+					}));
+
+					// 파일 경로
+					var filePath = UploadFilePath;
+					// 파일명
+					var fileName = Path.GetFileName(filePath);
+					// 파일이름 인코딩
+					var fileNameData = Encoding.UTF8.GetBytes(fileName);
+
+					// 전송할 데이터 타입 설정
+					var dataType = BitConverter.GetBytes((int)DataType.File);
+					// 파일이름 바이너리 데이터
+					var fileNameLen = BitConverter.GetBytes(fileNameData.Length);
+					// 파일의 바이너리 데이터
+					var fileData = UploadFileBuffer;
+					// 파일 용량 데이터
+					var fileSize = BitConverter.GetBytes(fileData.Length);
+
+					// 데이터 조립 type(File) 4 byte, 파일이름데이터, 파일이름(4 byte), 파일용량(4 byte), 파일데이터)
+					var sendData = new byte[dataType.Length + fileNameLen.Length + fileNameData.Length + fileSize.Length + fileData.Length];
+
+					// 배열 앞부분에 메타데이터 삽입
+					dataType.CopyTo(sendData, 0);
+					// 메타데이터 뒷부분에 파일이름 데이터 삽입
+					fileNameLen.CopyTo(sendData, 4);
+					// 파일이름 바이너리 데이터 뒷부분에 파일이름 삽입
+					fileNameData.CopyTo(sendData, 8);
+					// 파일이름 뒷부분에 파일 용량 삽입
+					fileSize.CopyTo(sendData, 8 + fileNameData.Length);
+					// 파일 용량 뒷부분에 파일 데이터 삽입
+					fileData.CopyTo(sendData, 8 + fileNameData.Length + fileSize.Length);
+
+					// 서버에 데이터 송신
+					Client?.Socket.Send(sendData);
+
+					// 로그 출력
+					UpdateLog($"서버에 파일을 송신했습니다. 파일명 : {fileName}");
+
+					// 메모리 정리
+					UploadFileBuffer = null;
+					UploadFilePath = string.Empty;
+					Invoke(new Action(() =>
+					{
+						// 라벨에 파일명 표시
+						lbFileName.Text = "없음";
+					}));
+				});
+			}
+			catch (FileNotFoundException)
+			{
+				MessageBox.Show("파일을 찾을 수 없습니다");
+				Invoke(new Action(() =>
+				{
+					btnFileUpload.Enabled = true;
+				}));
+			}
+			catch (Exception)
+			{
+				MessageBox.Show("파일 전송중 에러 발생");
+				Invoke(new Action(() =>
+				{
+					btnFileUpload.Enabled = true;
+					btnFileSend.Enabled = true;
+				}));
+			}
+		}
+
+		private string TryLabelSubString(string data, int length)
+		{
+			if(data.Length > length)
+			{
+				data = data.Substring(0, length) + "...";
+			}
+			return data;
+		}
+		/// <summary>
 		/// 파일 전송 액션
 		/// </summary>
 		/// <param name="sender"></param>
@@ -534,53 +640,19 @@ namespace MainApp
 		{
 			try
 			{
-				// 파일 경로
-				var filePath = UploadFilePath;
-				// 파일명
-				var fileName = Path.GetFileName(filePath);
-				// 파일이름 인코딩
-				var fileNameData = Encoding.UTF8.GetBytes(fileName);
-
-				// 전송할 데이터 타입 설정
-				var dataType = BitConverter.GetBytes((int)DataType.File);
-				// 파일이름 바이너리 데이터
-				var fileNameLen = BitConverter.GetBytes(fileNameData.Length);
-				// 파일의 바이너리 데이터
-				var fileData = UploadFileBuffer;
-				// 파일 용량 데이터
-				var fileSize = BitConverter.GetBytes(fileData.Length);
-
 				// 파일 용량 경고
-				if(fileData.Length > ((1024 * 1024) * 100)) 
+				if(UploadFileBuffer.Length > ((1024 * 1024) * 100)) 
 				{
-					if (MessageBox.Show("전송할 파일의 용량이 100MB 이상 입니다.\n고용량의 파일을 전송시 서버에서 처리동안 프로그램이 멈추거나\n메모리 부족시 서버와의 연결이 끊어 질 수 있습니다.\n전송하시겠습니까?", " 경고", MessageBoxButtons.YesNo) == DialogResult.No)
+					if (MessageBox.Show("전송할 파일의 용량이 100MB 이상 입니다.\n고용량의 파일을 전송시 서버에서 처리할동안 프로그램이 멈추거나\n메모리 부족시 서버와의 연결이 끊어 질 수 있습니다.\n전송하시겠습니까?", " 경고", MessageBoxButtons.YesNo) == DialogResult.No)
 					{
 						return;
 					}
 				}
-				// 데이터 조립 type(File) 4 byte, 파일이름데이터, 파일이름(4 byte), 파일용량(4 byte), 파일데이터)
-				var sendData = new byte[dataType.Length + fileNameLen.Length + fileNameData.Length + fileSize.Length + fileData.Length];
 
-				// 배열 앞부분에 메타데이터 삽입
-				dataType.CopyTo(sendData, 0);
-				// 메타데이터 뒷부분에 파일이름 데이터 삽입
-				fileNameLen.CopyTo(sendData, 4);
-				// 파일이름 바이너리 데이터 뒷부분에 파일이름 삽입
-				fileNameData.CopyTo(sendData, 8);
-				// 파일이름 뒷부분에 파일 용량 삽입
-				fileSize.CopyTo(sendData, 8 + fileNameData.Length);
-				// 파일 용량 뒷부분에 파일 데이터 삽입
-				fileData.CopyTo(sendData, 8 + fileNameData.Length + fileSize.Length);
+				UpdateLog($"서버에 파일을 송신하고 있습니다...");
 
-				// 서버에 데이터 송신
-				Client?.Socket.Send(sendData);
-
-				// 로그 출력
-				UpdateLog($"서버에 파일 송신>>{fileName}");
-			}
-			catch (FileNotFoundException)
-			{
-				MessageBox.Show("파일을 찾을 수 없습니다");
+				// 파일 전송
+				_ = SendFileToServerAsync();
 			}
 			catch (Exception)
 			{
@@ -600,7 +672,7 @@ namespace MainApp
 				if (openFileDialog.ShowDialog() == DialogResult.OK)
 				{
 					// 업로드 파일 처리 비동기 실행
-					_ = UploadFile(openFileDialog.FileName);
+					_ = UploadFileAsync(openFileDialog.FileName);
 				}
 			}
 		}
