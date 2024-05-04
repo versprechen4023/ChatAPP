@@ -28,6 +28,7 @@
 		/// </summary>
 		private void InitializeComponent()
 		{
+			this.components = new System.ComponentModel.Container();
 			this.gbServer = new System.Windows.Forms.GroupBox();
 			this.labelPort = new System.Windows.Forms.Label();
 			this.textPort = new System.Windows.Forms.TextBox();
@@ -39,6 +40,7 @@
 			this.lbLog = new System.Windows.Forms.ListBox();
 			this.ssServerStatus = new System.Windows.Forms.StatusStrip();
 			this.ssServerStatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
+			this.CheckConnectList = new System.Windows.Forms.Timer(this.components);
 			this.gbServer.SuspendLayout();
 			this.gbConnectingList.SuspendLayout();
 			this.gbLog.SuspendLayout();
@@ -149,6 +151,11 @@
 			this.ssServerStatusLabel.Size = new System.Drawing.Size(59, 17);
 			this.ssServerStatusLabel.Text = "서버 상태";
 			// 
+			// CheckConnectList
+			// 
+			this.CheckConnectList.Interval = 5000;
+			this.CheckConnectList.Tick += new System.EventHandler(this.CheckConnectList_Tick);
+			// 
 			// ServerClient
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
@@ -186,6 +193,7 @@
 		private System.Windows.Forms.ListBox lbLog;
 		private System.Windows.Forms.StatusStrip ssServerStatus;
 		private System.Windows.Forms.ToolStripStatusLabel ssServerStatusLabel;
+		private System.Windows.Forms.Timer CheckConnectList;
 	}
 }
 

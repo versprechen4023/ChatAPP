@@ -1,24 +1,14 @@
 ﻿using AppCommon;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.ComTypes;
-using System.ServiceModel;
-using System.ServiceModel.Channels;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using static System.Net.WebRequestMethods;
 using File = System.IO.File;
 
 namespace MainApp
@@ -33,7 +23,7 @@ namespace MainApp
 		/// <summary>
 		/// 전송할 데이터의 타입 구분
 		/// </summary>
-		private enum DataType { TEXT = 1, File, CallBackFileAccept, CallBackFileSended };
+		private enum DataType { TEXT = 1, File, CallBackFileAccept, CallBackFileSended, Ping };
 
 		/// <summary>
 		/// 서버에 업로드할 파일 경로
@@ -255,6 +245,14 @@ namespace MainApp
 					var message = Encoding.UTF8.GetString(data.Data, 4, length - 4);
 
 					SetFileSendAction(message, true);
+				}
+				else if(dataType == (int)DataType.Ping)
+				{
+					// 핑 메타데이터 생성
+					var ping = BitConverter.GetBytes((int)DataType.Ping);
+
+					// 핑 전송
+					Client?.Socket.Send(ping);
 				}
 
 				if (dataType == (int)DataType.File)

@@ -1,24 +1,17 @@
 ﻿using AppCommon;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Runtime.Remoting.Messaging;
-using System.Security.Policy;
-using System.ServiceModel.Channels;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Xml.Schema;
-using static System.Net.Mime.MediaTypeNames;
-using static System.Windows.Forms.AxHost;
+
 
 namespace ServerApp
 {
@@ -35,9 +28,14 @@ namespace ServerApp
 		private SynchronizedCollection<TcpClientExtension> ClientList { get; set; }
 
 		/// <summary>
+		/// 핑에 응답한 클라이언트 리스트
+		/// </summary>
+		private List<TcpClientExtension> ConnectClientList;
+
+		/// <summary>
 		/// 전송할 데이터의 타입 구분
 		/// </summary>
-		private enum DataType { TEXT = 1, File, CallBackFileAccept, CallBackFileSended};
+		private enum DataType { TEXT = 1, File, CallBackFileAccept, CallBackFileSended, Ping};
 
 		/// <summary>
 		/// 전송 받은 파일을 저장할 폴더
@@ -80,6 +78,10 @@ namespace ServerApp
 
 				btnServerStart.Enabled = false;
 				btnServerEnd.Enabled = true;
+
+				// 핑 체크 타이머 실행
+				CheckConnectList.Interval = (1000 * 60) * 30;
+				CheckConnectList.Enabled = true;
 			}
 			catch (SocketException ex) when (ex.SocketErrorCode == SocketError.AddressAlreadyInUse)
 			{
@@ -109,6 +111,7 @@ namespace ServerApp
 			// 클라이언트 리스트 초기화
 			lbConnectingList.Items.Clear();
 
+			CheckConnectList.Stop();
 			// 접속중인 클라이언트 연결을 모두 끊음 쓰레드 충돌 방지를 위한 LOCK 키워드 사용
 			lock (ClientList.SyncRoot)
 			{
@@ -121,6 +124,8 @@ namespace ServerApp
 
 			btnServerStart.Enabled = true;
 			btnServerEnd.Enabled = false;
+
+			CheckConnectList.Enabled = false;
 		}
 
 		/// <summary>
@@ -430,6 +435,10 @@ namespace ServerApp
 						File.Delete(SaveFilePath);
 					}
 				}
+				else if (dataType == (int)DataType.Ping)
+				{
+					ConnectClientList.Add(data.Client);
+				}
 
 				if (dataType == (int)DataType.File)
 				{
@@ -526,7 +535,7 @@ namespace ServerApp
 		/// <param name="log"></param>
 		private void UpdateLog(string log)
 		{
-			int max_log_length = 55;
+			int max_log_length = 65;
 			int index = 0;
 			while (index < log.Length)
 			{
@@ -579,6 +588,72 @@ namespace ServerApp
 			}
 			// 0.## + 용량타입으로 반환
 			return string.Format("{0:0.##} {1}", size, units[arraytIndex]);
+		}
+
+		/// <summary>
+		/// 30분에 한번씩 접속 목록 확인
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+		private void CheckConnectList_Tick(object sender, EventArgs e)
+		{
+			lock (ClientList.SyncRoot)
+			{
+				foreach (var client in ClientList)
+				{
+					// 핑 메타데이터 생성
+					var ping = BitConverter.GetBytes((int)DataType.Ping);
+
+					// 핑 전송
+					client.Socket.Send(ping);
+				}
+			}
+
+			// 핑 처리 시작
+			ConnectClientList = new List<TcpClientExtension>();
+			_ = CheckConnect();
+		}
+
+		/// <summary>
+		/// 비동기로 클라이언트 체크
+		/// </summary>
+		/// <returns></returns>
+		private async Task CheckConnect()
+		{
+			await Task.Run(async () =>
+			{
+				if (Server != null && Server.Active)
+				{
+					try
+					{
+						// 통신 10분 대기
+						await Task.Delay((1000 * 60) * 10);
+
+						lock (ClientList.SyncRoot)
+						{
+							foreach (var client in ClientList.ToList())
+							{
+								if (!ConnectClientList.Contains(client))
+								{
+									CommonData data = new CommonData(client);
+
+									// 로그 표시
+									UpdateLog($"{data.Client.RemoteEndPoint}에서 접속이 종료되었습니다");
+
+									// 클라이언트 목록에서 절단 클라이언트를 삭제
+									SetConnectionClient(data.Client.Client, false);
+									ClientList.Remove(data.Client);
+
+									// 접속중인 클라이언트에게 메시지 송신(절단 클라이언트 제외)
+									SendMessageToAllClient(data, $"{data.Client.RemoteEndPoint}에서 접속을 종료했습니다");
+								}
+							}
+							ConnectClientList = null;
+						}
+					}
+					catch (Exception) { }
+				}
+			});
 		}
 	}
 }
