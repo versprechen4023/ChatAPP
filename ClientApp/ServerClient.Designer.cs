@@ -41,6 +41,8 @@
 			this.ssServerStatus = new System.Windows.Forms.StatusStrip();
 			this.ssServerStatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
 			this.CheckConnectList = new System.Windows.Forms.Timer(this.components);
+			this.cbIPCheck = new System.Windows.Forms.CheckBox();
+			this.cbOnlyLocalIP = new System.Windows.Forms.CheckBox();
 			this.gbServer.SuspendLayout();
 			this.gbConnectingList.SuspendLayout();
 			this.gbLog.SuspendLayout();
@@ -156,11 +158,37 @@
 			this.CheckConnectList.Interval = 5000;
 			this.CheckConnectList.Tick += new System.EventHandler(this.CheckConnectList_Tick);
 			// 
+			// cbIPCheck
+			// 
+			this.cbIPCheck.AutoSize = true;
+			this.cbIPCheck.Checked = true;
+			this.cbIPCheck.CheckState = System.Windows.Forms.CheckState.Checked;
+			this.cbIPCheck.Location = new System.Drawing.Point(519, 5);
+			this.cbIPCheck.Name = "cbIPCheck";
+			this.cbIPCheck.Size = new System.Drawing.Size(112, 16);
+			this.cbIPCheck.TabIndex = 5;
+			this.cbIPCheck.Text = "해외아이피 차단";
+			this.cbIPCheck.UseVisualStyleBackColor = true;
+			this.cbIPCheck.CheckedChanged += new System.EventHandler(this.cbIPCheck_CheckedChanged);
+			// 
+			// cbOnlyLocalIP
+			// 
+			this.cbOnlyLocalIP.AutoSize = true;
+			this.cbOnlyLocalIP.Location = new System.Drawing.Point(383, 5);
+			this.cbOnlyLocalIP.Name = "cbOnlyLocalIP";
+			this.cbOnlyLocalIP.Size = new System.Drawing.Size(130, 16);
+			this.cbOnlyLocalIP.TabIndex = 6;
+			this.cbOnlyLocalIP.Text = "내부망(비공개)설정";
+			this.cbOnlyLocalIP.UseVisualStyleBackColor = true;
+			this.cbOnlyLocalIP.CheckedChanged += new System.EventHandler(this.cbOnlyLocalIP_CheckedChanged);
+			// 
 			// ServerClient
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.ClientSize = new System.Drawing.Size(641, 423);
+			this.Controls.Add(this.cbOnlyLocalIP);
+			this.Controls.Add(this.cbIPCheck);
 			this.Controls.Add(this.ssServerStatus);
 			this.Controls.Add(this.gbLog);
 			this.Controls.Add(this.gbConnectingList);
@@ -194,6 +222,8 @@
 		private System.Windows.Forms.StatusStrip ssServerStatus;
 		private System.Windows.Forms.ToolStripStatusLabel ssServerStatusLabel;
 		private System.Windows.Forms.Timer CheckConnectList;
+		private System.Windows.Forms.CheckBox cbIPCheck;
+		private System.Windows.Forms.CheckBox cbOnlyLocalIP;
 	}
 }
 

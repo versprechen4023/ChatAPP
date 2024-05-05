@@ -3,12 +3,14 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static System.Net.WebRequestMethods;
 using File = System.IO.File;
 
 namespace MainApp
@@ -23,7 +25,7 @@ namespace MainApp
 		/// <summary>
 		/// 전송할 데이터의 타입 구분
 		/// </summary>
-		private enum DataType { TEXT = 1, File, CallBackFileAccept, CallBackFileSended, Ping };
+		private enum DataType { TEXT = 1, File, CallBackFileAccept, CallBackFileSended, Ping};
 
 		/// <summary>
 		/// 서버에 업로드할 파일 경로
@@ -49,6 +51,11 @@ namespace MainApp
 		/// 서버에서 받은 파일 용량
 		/// </summary>
 		private int DownloadFileSizeLen = 0;
+
+		/// <summary>
+		/// 내부망(사설 IP)에 연결 여부
+		/// </summary>
+		private bool ConnectPrivate = false;
 
 		public MainClient()
 		{
@@ -97,14 +104,20 @@ namespace MainApp
 				// 접속할 서버의 엔드포인트 작성
 				var connectEndPoint = new IPEndPoint(IPAddress.Parse(connectIpAddress), int.Parse(connectPort));
 
-				// 클라이언트의 엔드포인트 작성(포트는 자동할당)
-				var localEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 0);
+				// IP 설정
+				var localIP = ConnectPrivate ? "127.0.0.1" : GetPublicIP();
+
+				// 클라이언트의 엔드포인트 작성(포트는 자동할당) 내부 환경일경우 127.0.0.1 or GetLocalIP() 함수 활용
+				var localEndPoint = new IPEndPoint(IPAddress.Parse(localIP), 0);
 
 				// 클라이언트 생성
 				Client = new TcpClientExtension(localEndPoint);
-
 				// 서버에 접속
 				Client.Client.Connect(connectEndPoint);
+
+				// 연결 테스트용 소켓 전송
+				byte[] test = new byte[1];
+				Client?.Socket.Send(test);
 
 				// 서버 접속 상태를 접속중으로 변경
 				SetConnectionStatus(true);
@@ -120,15 +133,16 @@ namespace MainApp
 				btnDisconnect.Enabled = true;
 				btnSendMessage.Enabled = true;
 				btnFileUpload.Enabled = true;
-			}
-			catch (Exception ex)
-			{
-				UpdateLog(ex.Message);
 
+			}
+			catch (SocketException ex) when (ex.SocketErrorCode == SocketError.TimedOut)
+			{
+				UpdateLog("서버에 접속 할 수 없습니다 서버가 오프라인이거나 연결 할 수 없는 상태입니다");
+			}
+			catch(Exception)
+			{
 				UpdateLog("서버 접속에 실패했습니다");
 			}
-
-
 		}
 
 		/// <summary>
@@ -440,6 +454,42 @@ namespace MainApp
 		}
 
 		/// <summary>
+		/// 사설 IP 처리
+		/// </summary>
+		/// <returns></returns>
+		private string GetLocalIP()
+		{
+			string localIP = string.Empty;
+
+			var host = Dns.GetHostEntry(Dns.GetHostName());
+
+			foreach (var ip in host.AddressList)
+			{
+				if (ip.AddressFamily == AddressFamily.InterNetwork)
+				{
+					localIP = ip.ToString();
+					break;
+				}
+			}
+			return localIP;
+		}
+
+		/// <summary>
+		/// 공인 IP 처리
+		/// </summary>
+		/// <returns></returns>
+		private string GetPublicIP()
+		{
+			string publicIP = new WebClient().DownloadString("http://ipinfo.io/ip").Trim();
+
+			if (string.IsNullOrWhiteSpace(publicIP))
+			{
+				publicIP = GetLocalIP();
+			}
+			return publicIP;
+		}
+
+		/// <summary>
 		/// 파일 송수신시 서버로부터 오는 콜백 처리 함수
 		/// </summary>
 		/// <param name="message"></param>
@@ -702,6 +752,23 @@ namespace MainApp
 					bw.Write(DownloadFileBuffer);
 					bw.Close();
 				}
+			}
+		}
+
+		/// <summary>
+		/// 내부망(사설 IP) 접속 설정
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+		private void cbConnectPrivate_CheckedChanged(object sender, EventArgs e)
+		{
+			if(cbConnectPrivate.Checked)
+			{
+				ConnectPrivate = true;
+			}
+			else
+			{
+				ConnectPrivate = false;
 			}
 		}
 	}

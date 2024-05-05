@@ -52,6 +52,7 @@
 			this.lbFilelabel = new System.Windows.Forms.Label();
 			this.btnFileDownload = new System.Windows.Forms.Button();
 			this.groupBox1 = new System.Windows.Forms.GroupBox();
+			this.cbConnectPrivate = new System.Windows.Forms.CheckBox();
 			this.gbMain.SuspendLayout();
 			this.gbInfo.SuspendLayout();
 			this.gbLog.SuspendLayout();
@@ -62,6 +63,7 @@
 			// 
 			// gbMain
 			// 
+			this.gbMain.Controls.Add(this.cbConnectPrivate);
 			this.gbMain.Controls.Add(this.btnDisconnect);
 			this.gbMain.Controls.Add(this.btnConnect);
 			this.gbMain.Controls.Add(this.textConnectPort);
@@ -312,6 +314,17 @@
 			this.groupBox1.TabStop = false;
 			this.groupBox1.Text = "파일 처리";
 			// 
+			// cbConnectPrivate
+			// 
+			this.cbConnectPrivate.AutoSize = true;
+			this.cbConnectPrivate.Location = new System.Drawing.Point(435, 19);
+			this.cbConnectPrivate.Name = "cbConnectPrivate";
+			this.cbConnectPrivate.Size = new System.Drawing.Size(88, 16);
+			this.cbConnectPrivate.TabIndex = 8;
+			this.cbConnectPrivate.Text = "내부망 연결";
+			this.cbConnectPrivate.UseVisualStyleBackColor = true;
+			this.cbConnectPrivate.CheckedChanged += new System.EventHandler(this.cbConnectPrivate_CheckedChanged);
+			// 
 			// MainClient
 			// 
 			this.AcceptButton = this.btnSendMessage;
@@ -373,6 +386,7 @@
 		private System.Windows.Forms.Label lbFilelabel;
 		private System.Windows.Forms.Button btnFileDownload;
 		private System.Windows.Forms.GroupBox groupBox1;
+		private System.Windows.Forms.CheckBox cbConnectPrivate;
 	}
 }
 

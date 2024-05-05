@@ -1,10 +1,12 @@
 ﻿using AppCommon;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -35,12 +37,22 @@ namespace ServerApp
 		/// <summary>
 		/// 전송할 데이터의 타입 구분
 		/// </summary>
-		private enum DataType { TEXT = 1, File, CallBackFileAccept, CallBackFileSended, Ping};
+		private enum DataType { TEXT = 1, File, CallBackFileAccept, CallBackFileSended, Ping };
 
 		/// <summary>
 		/// 전송 받은 파일을 저장할 폴더
 		/// </summary>
 		private string SaveFilePath = string.Empty;
+
+		/// <summary>
+		/// 해외 아이피 차단 유무 디폴트 = true
+		/// </summary>
+		private bool BlockForeignIP = true;
+
+		/// <summary>
+		/// 내부망(사설IP)만 허용 할지 여부
+		/// </summary>
+		private bool AcceptLocalOnly = false;
 
 		public ServerClient()
 		{
@@ -65,8 +77,11 @@ namespace ServerApp
 				// 포트번호가 유효한지 체크
 				if (!CheckPortNumber(port)) return;
 
-				// 서버 설정 및 실행 시작
-				var localEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), int.Parse(port));
+				// IP 설정
+				var localIP = AcceptLocalOnly ? "127.0.0.1" : GetLocalIP();
+
+				// 서버 설정 및 실행 시작(공유기 환경일 경우 localIP에 대한 포트포워딩 필요) 내부 환경일경우 127.0.0.1 활용
+				var localEndPoint = new IPEndPoint(IPAddress.Parse(localIP), int.Parse(port));
 				Server = new TcpListenerExtension(localEndPoint);
 				Server.Start();
 
@@ -78,6 +93,8 @@ namespace ServerApp
 
 				btnServerStart.Enabled = false;
 				btnServerEnd.Enabled = true;
+				cbIPCheck.Enabled = false;
+				cbOnlyLocalIP.Enabled = false;
 
 				// 핑 체크 타이머 실행
 				CheckConnectList.Interval = (1000 * 60) * 30;
@@ -124,6 +141,8 @@ namespace ServerApp
 
 			btnServerStart.Enabled = true;
 			btnServerEnd.Enabled = false;
+			cbOnlyLocalIP.Enabled = true;
+			if (AcceptLocalOnly) { cbIPCheck.Enabled = false; } else { cbIPCheck.Enabled = true; }
 
 			CheckConnectList.Enabled = false;
 		}
@@ -219,6 +238,20 @@ namespace ServerApp
 
 				// 클라이언트 리스트에 접속중인 클라이언트 추가
 				var clientInfo = new TcpClientExtension(client);
+
+				// 해외 아이피 차단설정 시 해외 아이피 확인
+				if (BlockForeignIP && !AcceptLocalOnly)
+				{
+					IPEndPoint ip = client.Client.RemoteEndPoint as IPEndPoint;
+					var ipResult = IsKRIP(ip.Address.ToString());
+					if (!ipResult) 
+					{ 
+						UpdateLog($"{client.Client.RemoteEndPoint}접속 차단"); 
+						clientInfo.Socket.Close(); 
+						return; 
+					}
+				}
+
 				SetConnectionClient(client, true);
 				ClientList.Add(clientInfo);
 
@@ -485,7 +518,7 @@ namespace ServerApp
 						// 파일을 보낸 클라이언트에게 다른 클라이언트에게 파일을 송신했다는 확인 메시지 발송
 						FileSendedCallbackToClient(data, fileName);
 					}
-			
+
 				}
 
 				// 서버가 실행중인경우 계속해서 접속중인 클라이언트로 부터 데이터 수신 대기
@@ -576,7 +609,7 @@ namespace ServerApp
 			// 소수점 계산을위해 타입 변환
 			double size = fileLength;
 			// 용량타입 byte부터 GB까지 표현
-			string[] units = { "bytes", "KB", "MB", "GB"};
+			string[] units = { "bytes", "KB", "MB", "GB" };
 			// 추출할 배열의 인덱스
 			int arraytIndex = 0;
 
@@ -588,6 +621,90 @@ namespace ServerApp
 			}
 			// 0.## + 용량타입으로 반환
 			return string.Format("{0:0.##} {1}", size, units[arraytIndex]);
+		}
+
+		/// <summary>
+		/// 사설 IP 처리
+		/// </summary>
+		/// <returns></returns>
+		private string GetLocalIP()
+		{
+			string localIP = string.Empty;
+
+			var host = Dns.GetHostEntry(Dns.GetHostName());
+
+			foreach (var ip in host.AddressList)
+			{
+				if (ip.AddressFamily == AddressFamily.InterNetwork)
+				{
+					localIP = ip.ToString();
+					break;
+				}
+			}
+			return localIP;
+		}
+
+		/// <summary>
+		/// 공인 IP 처리
+		/// </summary>
+		/// <returns></returns>
+		private string GetPublicIP()
+		{
+			string publicIP = new WebClient().DownloadString("http://ipinfo.io/ip").Trim();
+
+			if (string.IsNullOrWhiteSpace(publicIP))
+			{
+				publicIP = GetLocalIP();
+			}
+			return publicIP;
+		}
+
+		/// <summary>
+		/// 한국 아이피 확인
+		/// </summary>
+		/// <param name="ip"></param>
+		/// <returns></returns>
+		private bool IsKRIP(string ip)
+		{
+			try
+			{
+				// url 작성
+				string apiKey = "Sxg%2F3MQsYRuNFuYI2f3UnLO4QMtIfT00P9C0OxBzEE79CYCM%2BfGA354hNLUFpw76Ka7aMCl4wIgY8AXCwz4Krg%3D%3D";
+				string url = "http://apis.data.go.kr/B551505/whois/ipas_country_code";
+				url += $"?ServiceKey={apiKey}"; // Service Key
+				url += $"&query={ip}";
+				url += "&answer=json";
+
+				// 리퀘스트 작성
+				var request = (HttpWebRequest)WebRequest.Create(url);
+				request.Method = "GET";
+				request.ContentType = "application/json";
+
+				// 리스폰스 응답 저장
+				using (var response = request.GetResponse() as HttpWebResponse)
+				{
+					StreamReader reader = new StreamReader(response.GetResponseStream());
+					string json = reader.ReadToEnd();
+					JObject jsonData = JObject.Parse(json);
+
+					// JSON 데이터에서 컨트리코드를 가져온다
+					string countryCode = jsonData["response"]["whois"]["countryCode"].ToString();
+
+					// 한국 아이피면 True 반환
+					if (countryCode.Equals("KR"))
+					{
+						return true;
+					}
+					else
+					{
+						return false;
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				UpdateLog(ex.Message); return false;
+			}
 		}
 
 		/// <summary>
@@ -654,6 +771,50 @@ namespace ServerApp
 					catch (Exception) { }
 				}
 			});
+		}
+
+		/// <summary>
+		/// 해외 아이피 차단 설정
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+		private void cbIPCheck_CheckedChanged(object sender, EventArgs e)
+		{
+			if (cbIPCheck.Checked)
+			{
+				BlockForeignIP = true;
+			}
+			else
+			{
+				BlockForeignIP = false;
+			}
+		}
+
+		/// <summary>
+		/// 내부망(사설 IP)전용 설정
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+		private void cbOnlyLocalIP_CheckedChanged(object sender, EventArgs e)
+		{
+			if (cbOnlyLocalIP.Checked)
+			{
+				if (MessageBox.Show("내부망 설정을 하게 되면 외부에서 이 서버에 연결 할 수 없습니다.\n정말 설정 하시겠습니까?", " 경고", MessageBoxButtons.YesNo) == DialogResult.No)
+				{
+					cbOnlyLocalIP.Checked = false;
+				}
+				else
+				{
+					AcceptLocalOnly = true;
+					cbIPCheck.Checked = false;
+					cbIPCheck.Enabled = false;
+				}
+			}
+			else
+			{
+				AcceptLocalOnly = false;
+				cbIPCheck.Enabled = true;
+			}
 		}
 	}
 }
