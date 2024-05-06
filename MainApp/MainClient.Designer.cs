@@ -29,10 +29,17 @@
 		private void InitializeComponent()
 		{
 			this.gbMain = new System.Windows.Forms.GroupBox();
+			this.textConnectIp3 = new System.Windows.Forms.TextBox();
+			this.lbIP3 = new System.Windows.Forms.Label();
+			this.lbIP2 = new System.Windows.Forms.Label();
+			this.textConnectIp2 = new System.Windows.Forms.TextBox();
+			this.textConnectIp4 = new System.Windows.Forms.TextBox();
+			this.lbIP1 = new System.Windows.Forms.Label();
+			this.cbConnectPrivate = new System.Windows.Forms.CheckBox();
 			this.btnDisconnect = new System.Windows.Forms.Button();
 			this.btnConnect = new System.Windows.Forms.Button();
 			this.textConnectPort = new System.Windows.Forms.TextBox();
-			this.textConnectIp = new System.Windows.Forms.TextBox();
+			this.textConnectIp1 = new System.Windows.Forms.TextBox();
 			this.labelPort = new System.Windows.Forms.Label();
 			this.labelIp = new System.Windows.Forms.Label();
 			this.gbInfo = new System.Windows.Forms.GroupBox();
@@ -52,7 +59,6 @@
 			this.lbFilelabel = new System.Windows.Forms.Label();
 			this.btnFileDownload = new System.Windows.Forms.Button();
 			this.groupBox1 = new System.Windows.Forms.GroupBox();
-			this.cbConnectPrivate = new System.Windows.Forms.CheckBox();
 			this.gbMain.SuspendLayout();
 			this.gbInfo.SuspendLayout();
 			this.gbLog.SuspendLayout();
@@ -63,11 +69,17 @@
 			// 
 			// gbMain
 			// 
+			this.gbMain.Controls.Add(this.textConnectIp3);
+			this.gbMain.Controls.Add(this.lbIP3);
+			this.gbMain.Controls.Add(this.lbIP2);
+			this.gbMain.Controls.Add(this.textConnectIp2);
+			this.gbMain.Controls.Add(this.textConnectIp4);
+			this.gbMain.Controls.Add(this.lbIP1);
 			this.gbMain.Controls.Add(this.cbConnectPrivate);
 			this.gbMain.Controls.Add(this.btnDisconnect);
 			this.gbMain.Controls.Add(this.btnConnect);
 			this.gbMain.Controls.Add(this.textConnectPort);
-			this.gbMain.Controls.Add(this.textConnectIp);
+			this.gbMain.Controls.Add(this.textConnectIp1);
 			this.gbMain.Controls.Add(this.labelPort);
 			this.gbMain.Controls.Add(this.labelIp);
 			this.gbMain.Location = new System.Drawing.Point(10, 10);
@@ -79,6 +91,78 @@
 			this.gbMain.TabStop = false;
 			this.gbMain.Text = "접속설정";
 			// 
+			// textConnectIp3
+			// 
+			this.textConnectIp3.Location = new System.Drawing.Point(194, 30);
+			this.textConnectIp3.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+			this.textConnectIp3.MaxLength = 3;
+			this.textConnectIp3.Name = "textConnectIp3";
+			this.textConnectIp3.Size = new System.Drawing.Size(36, 21);
+			this.textConnectIp3.TabIndex = 3;
+			this.textConnectIp3.Text = "0";
+			// 
+			// lbIP3
+			// 
+			this.lbIP3.AutoSize = true;
+			this.lbIP3.Font = new System.Drawing.Font("굴림", 9F);
+			this.lbIP3.Location = new System.Drawing.Point(236, 39);
+			this.lbIP3.Name = "lbIP3";
+			this.lbIP3.Size = new System.Drawing.Size(9, 12);
+			this.lbIP3.TabIndex = 0;
+			this.lbIP3.Text = ".";
+			// 
+			// lbIP2
+			// 
+			this.lbIP2.AutoSize = true;
+			this.lbIP2.Font = new System.Drawing.Font("굴림", 9F);
+			this.lbIP2.Location = new System.Drawing.Point(179, 37);
+			this.lbIP2.Name = "lbIP2";
+			this.lbIP2.Size = new System.Drawing.Size(9, 12);
+			this.lbIP2.TabIndex = 0;
+			this.lbIP2.Text = ".";
+			// 
+			// textConnectIp2
+			// 
+			this.textConnectIp2.Location = new System.Drawing.Point(137, 30);
+			this.textConnectIp2.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+			this.textConnectIp2.MaxLength = 3;
+			this.textConnectIp2.Name = "textConnectIp2";
+			this.textConnectIp2.Size = new System.Drawing.Size(36, 21);
+			this.textConnectIp2.TabIndex = 2;
+			this.textConnectIp2.Text = "0";
+			// 
+			// textConnectIp4
+			// 
+			this.textConnectIp4.Location = new System.Drawing.Point(251, 31);
+			this.textConnectIp4.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+			this.textConnectIp4.MaxLength = 3;
+			this.textConnectIp4.Name = "textConnectIp4";
+			this.textConnectIp4.Size = new System.Drawing.Size(36, 21);
+			this.textConnectIp4.TabIndex = 4;
+			this.textConnectIp4.Text = "1";
+			// 
+			// lbIP1
+			// 
+			this.lbIP1.AutoSize = true;
+			this.lbIP1.Font = new System.Drawing.Font("굴림", 9F);
+			this.lbIP1.Location = new System.Drawing.Point(122, 38);
+			this.lbIP1.Name = "lbIP1";
+			this.lbIP1.Size = new System.Drawing.Size(9, 12);
+			this.lbIP1.TabIndex = 0;
+			this.lbIP1.Text = ".";
+			// 
+			// cbConnectPrivate
+			// 
+			this.cbConnectPrivate.AutoSize = true;
+			this.cbConnectPrivate.Location = new System.Drawing.Point(435, 19);
+			this.cbConnectPrivate.Name = "cbConnectPrivate";
+			this.cbConnectPrivate.Size = new System.Drawing.Size(88, 16);
+			this.cbConnectPrivate.TabIndex = 6;
+			this.cbConnectPrivate.TabStop = false;
+			this.cbConnectPrivate.Text = "내부망 연결";
+			this.cbConnectPrivate.UseVisualStyleBackColor = true;
+			this.cbConnectPrivate.CheckedChanged += new System.EventHandler(this.cbConnectPrivate_CheckedChanged);
+			// 
 			// btnDisconnect
 			// 
 			this.btnDisconnect.Enabled = false;
@@ -86,7 +170,8 @@
 			this.btnDisconnect.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
 			this.btnDisconnect.Name = "btnDisconnect";
 			this.btnDisconnect.Size = new System.Drawing.Size(66, 35);
-			this.btnDisconnect.TabIndex = 5;
+			this.btnDisconnect.TabIndex = 8;
+			this.btnDisconnect.TabStop = false;
 			this.btnDisconnect.Text = "종료";
 			this.btnDisconnect.UseVisualStyleBackColor = true;
 			this.btnDisconnect.Click += new System.EventHandler(this.btnDisconnect_Click);
@@ -97,33 +182,35 @@
 			this.btnConnect.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
 			this.btnConnect.Name = "btnConnect";
 			this.btnConnect.Size = new System.Drawing.Size(66, 37);
-			this.btnConnect.TabIndex = 4;
+			this.btnConnect.TabIndex = 7;
+			this.btnConnect.TabStop = false;
 			this.btnConnect.Text = "연결";
 			this.btnConnect.UseVisualStyleBackColor = true;
 			this.btnConnect.Click += new System.EventHandler(this.btnConnect_Click);
 			// 
 			// textConnectPort
 			// 
-			this.textConnectPort.Location = new System.Drawing.Point(340, 28);
+			this.textConnectPort.Location = new System.Drawing.Point(353, 31);
 			this.textConnectPort.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
 			this.textConnectPort.Name = "textConnectPort";
 			this.textConnectPort.Size = new System.Drawing.Size(76, 21);
-			this.textConnectPort.TabIndex = 3;
+			this.textConnectPort.TabIndex = 5;
 			this.textConnectPort.Text = "33306";
 			// 
-			// textConnectIp
+			// textConnectIp1
 			// 
-			this.textConnectIp.Location = new System.Drawing.Point(80, 29);
-			this.textConnectIp.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-			this.textConnectIp.Name = "textConnectIp";
-			this.textConnectIp.Size = new System.Drawing.Size(175, 21);
-			this.textConnectIp.TabIndex = 2;
-			this.textConnectIp.Text = "127.0.0.1";
+			this.textConnectIp1.Location = new System.Drawing.Point(80, 29);
+			this.textConnectIp1.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+			this.textConnectIp1.MaxLength = 3;
+			this.textConnectIp1.Name = "textConnectIp1";
+			this.textConnectIp1.Size = new System.Drawing.Size(36, 21);
+			this.textConnectIp1.TabIndex = 1;
+			this.textConnectIp1.Text = "127";
 			// 
 			// labelPort
 			// 
 			this.labelPort.AutoSize = true;
-			this.labelPort.Location = new System.Drawing.Point(276, 31);
+			this.labelPort.Location = new System.Drawing.Point(294, 34);
 			this.labelPort.Name = "labelPort";
 			this.labelPort.Size = new System.Drawing.Size(53, 12);
 			this.labelPort.TabIndex = 1;
@@ -150,16 +237,18 @@
 			this.gbInfo.Name = "gbInfo";
 			this.gbInfo.Padding = new System.Windows.Forms.Padding(3, 2, 3, 2);
 			this.gbInfo.Size = new System.Drawing.Size(462, 80);
-			this.gbInfo.TabIndex = 1;
+			this.gbInfo.TabIndex = 0;
 			this.gbInfo.TabStop = false;
 			this.gbInfo.Text = "인포";
 			// 
 			// textNickName
 			// 
 			this.textNickName.Location = new System.Drawing.Point(87, 17);
+			this.textNickName.MaxLength = 20;
 			this.textNickName.Name = "textNickName";
 			this.textNickName.Size = new System.Drawing.Size(100, 21);
-			this.textNickName.TabIndex = 4;
+			this.textNickName.TabIndex = 9;
+			this.textNickName.TabStop = false;
 			this.textNickName.Text = "익명";
 			// 
 			// lbNickName
@@ -178,7 +267,8 @@
 			this.btnSendMessage.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
 			this.btnSendMessage.Name = "btnSendMessage";
 			this.btnSendMessage.Size = new System.Drawing.Size(117, 23);
-			this.btnSendMessage.TabIndex = 2;
+			this.btnSendMessage.TabIndex = 11;
+			this.btnSendMessage.TabStop = false;
 			this.btnSendMessage.Text = "메세지 송신";
 			this.btnSendMessage.UseVisualStyleBackColor = true;
 			this.btnSendMessage.Click += new System.EventHandler(this.btnSendMessage_Click);
@@ -190,7 +280,8 @@
 			this.textMessage.MaxLength = 300;
 			this.textMessage.Name = "textMessage";
 			this.textMessage.Size = new System.Drawing.Size(242, 21);
-			this.textMessage.TabIndex = 1;
+			this.textMessage.TabIndex = 10;
+			this.textMessage.TabStop = false;
 			// 
 			// lbMessage
 			// 
@@ -207,7 +298,8 @@
 			this.btnFileSend.Location = new System.Drawing.Point(113, 46);
 			this.btnFileSend.Name = "btnFileSend";
 			this.btnFileSend.Size = new System.Drawing.Size(84, 23);
-			this.btnFileSend.TabIndex = 5;
+			this.btnFileSend.TabIndex = 13;
+			this.btnFileSend.TabStop = false;
 			this.btnFileSend.Text = "파일 전송";
 			this.btnFileSend.UseVisualStyleBackColor = true;
 			this.btnFileSend.Click += new System.EventHandler(this.btnFileSend_Click);
@@ -233,6 +325,7 @@
 			this.lbLog.Name = "lbLog";
 			this.lbLog.Size = new System.Drawing.Size(570, 148);
 			this.lbLog.TabIndex = 0;
+			this.lbLog.TabStop = false;
 			// 
 			// ssServerStatus
 			// 
@@ -242,7 +335,7 @@
 			this.ssServerStatus.Name = "ssServerStatus";
 			this.ssServerStatus.Padding = new System.Windows.Forms.Padding(1, 0, 12, 0);
 			this.ssServerStatus.Size = new System.Drawing.Size(700, 22);
-			this.ssServerStatus.TabIndex = 2;
+			this.ssServerStatus.TabIndex = 0;
 			this.ssServerStatus.Text = "statusStrip1";
 			// 
 			// ssServerStatusLabel
@@ -260,7 +353,7 @@
 			this.gbFileUpload.Location = new System.Drawing.Point(478, 84);
 			this.gbFileUpload.Name = "gbFileUpload";
 			this.gbFileUpload.Size = new System.Drawing.Size(212, 79);
-			this.gbFileUpload.TabIndex = 6;
+			this.gbFileUpload.TabIndex = 0;
 			this.gbFileUpload.TabStop = false;
 			this.gbFileUpload.Text = "파일 업로드";
 			// 
@@ -270,7 +363,7 @@
 			this.lbFileName.Location = new System.Drawing.Point(58, 25);
 			this.lbFileName.Name = "lbFileName";
 			this.lbFileName.Size = new System.Drawing.Size(29, 12);
-			this.lbFileName.TabIndex = 8;
+			this.lbFileName.TabIndex = 0;
 			this.lbFileName.Text = "없음";
 			// 
 			// btnFileUpload
@@ -279,7 +372,8 @@
 			this.btnFileUpload.Location = new System.Drawing.Point(8, 46);
 			this.btnFileUpload.Name = "btnFileUpload";
 			this.btnFileUpload.Size = new System.Drawing.Size(99, 23);
-			this.btnFileUpload.TabIndex = 7;
+			this.btnFileUpload.TabIndex = 12;
+			this.btnFileUpload.TabStop = false;
 			this.btnFileUpload.Text = "파일 업로드";
 			this.btnFileUpload.UseVisualStyleBackColor = true;
 			this.btnFileUpload.Click += new System.EventHandler(this.btnFileUpload_Click);
@@ -290,7 +384,7 @@
 			this.lbFilelabel.Location = new System.Drawing.Point(6, 25);
 			this.lbFilelabel.Name = "lbFilelabel";
 			this.lbFilelabel.Size = new System.Drawing.Size(49, 12);
-			this.lbFilelabel.TabIndex = 6;
+			this.lbFilelabel.TabIndex = 0;
 			this.lbFilelabel.Text = "파일명 :";
 			// 
 			// btnFileDownload
@@ -299,7 +393,8 @@
 			this.btnFileDownload.Location = new System.Drawing.Point(6, 20);
 			this.btnFileDownload.Name = "btnFileDownload";
 			this.btnFileDownload.Size = new System.Drawing.Size(77, 28);
-			this.btnFileDownload.TabIndex = 0;
+			this.btnFileDownload.TabIndex = 14;
+			this.btnFileDownload.TabStop = false;
 			this.btnFileDownload.Text = "파일 저장";
 			this.btnFileDownload.UseVisualStyleBackColor = true;
 			this.btnFileDownload.Click += new System.EventHandler(this.btnFileDownload_Click);
@@ -310,20 +405,9 @@
 			this.groupBox1.Location = new System.Drawing.Point(599, 169);
 			this.groupBox1.Name = "groupBox1";
 			this.groupBox1.Size = new System.Drawing.Size(89, 166);
-			this.groupBox1.TabIndex = 7;
+			this.groupBox1.TabIndex = 0;
 			this.groupBox1.TabStop = false;
 			this.groupBox1.Text = "파일 처리";
-			// 
-			// cbConnectPrivate
-			// 
-			this.cbConnectPrivate.AutoSize = true;
-			this.cbConnectPrivate.Location = new System.Drawing.Point(435, 19);
-			this.cbConnectPrivate.Name = "cbConnectPrivate";
-			this.cbConnectPrivate.Size = new System.Drawing.Size(88, 16);
-			this.cbConnectPrivate.TabIndex = 8;
-			this.cbConnectPrivate.Text = "내부망 연결";
-			this.cbConnectPrivate.UseVisualStyleBackColor = true;
-			this.cbConnectPrivate.CheckedChanged += new System.EventHandler(this.cbConnectPrivate_CheckedChanged);
 			// 
 			// MainClient
 			// 
@@ -369,7 +453,7 @@
 		private System.Windows.Forms.ToolStripStatusLabel ssServerStatusLabel;
 		private System.Windows.Forms.Label labelIp;
 		private System.Windows.Forms.Label labelPort;
-		private System.Windows.Forms.TextBox textConnectIp;
+		private System.Windows.Forms.TextBox textConnectIp1;
 		private System.Windows.Forms.TextBox textConnectPort;
 		private System.Windows.Forms.Button btnConnect;
 		private System.Windows.Forms.Button btnDisconnect;
@@ -387,6 +471,12 @@
 		private System.Windows.Forms.Button btnFileDownload;
 		private System.Windows.Forms.GroupBox groupBox1;
 		private System.Windows.Forms.CheckBox cbConnectPrivate;
+		private System.Windows.Forms.Label lbIP1;
+		private System.Windows.Forms.Label lbIP2;
+		private System.Windows.Forms.TextBox textConnectIp2;
+		private System.Windows.Forms.TextBox textConnectIp4;
+		private System.Windows.Forms.TextBox textConnectIp3;
+		private System.Windows.Forms.Label lbIP3;
 	}
 }
 

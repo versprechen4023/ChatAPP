@@ -94,10 +94,10 @@ namespace MainApp
 			// 연결할서버의 포트
 			var connectPort = textConnectPort.Text.Trim();
 			// 연결할서버의 아이피
-			var connectIpAddress = textConnectIp.Text.Trim();
-
+			var connectIpAddress = $"{textConnectIp1.Text.Trim()}.{textConnectIp2.Text.Trim()}.{textConnectIp3.Text.Trim()}.{textConnectIp4.Text.Trim()}".Trim();
 			try
 			{
+				MessageBox.Show(connectIpAddress);
 				// 아아피 포트 정규식 체크
 				if (!CheckPortAndIpNumber(connectPort, connectIpAddress)) return;
 
@@ -135,12 +135,13 @@ namespace MainApp
 				btnFileUpload.Enabled = true;
 
 			}
-			catch (SocketException ex) when (ex.SocketErrorCode == SocketError.TimedOut)
+			catch (SocketException ex) when (ex.SocketErrorCode == SocketError.TimedOut || ex.SocketErrorCode == SocketError.AccessDenied) 
 			{
-				UpdateLog("서버에 접속 할 수 없습니다 서버가 오프라인이거나 연결 할 수 없는 상태입니다");
+				UpdateLog("서버에 접속 할 수 없습니다 서버가 오프라인이거나 연결을 거부 했습니다");
 			}
-			catch(Exception)
+			catch(Exception ex)
 			{
+				UpdateLog(ex.Message);
 				UpdateLog("서버 접속에 실패했습니다");
 			}
 		}
