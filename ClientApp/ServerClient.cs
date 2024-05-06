@@ -1,13 +1,11 @@
 ﻿using AppCommon;
 using Newtonsoft.Json.Linq;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -505,11 +503,18 @@ namespace ServerApp
 						Array.Copy(data.Data, 12 + fileNameLen, fileBuffer, 0, length - (12 + fileNameLen));
 						receivedBytes += length - (12 + fileNameLen);
 
+						// 진행률을 확인하기위해 프로그레스바에 파일 크기 할당
+						pbFileProgress.Maximum = fileSizeLen;
+
 						while (receivedBytes < fileSizeLen)
 						{
 							if (ns.DataAvailable)
 							{
 								receivedBytes += data.Client.Socket.Receive(fileBuffer, receivedBytes, (fileSizeLen - receivedBytes), SocketFlags.None);
+								Invoke(new Action(() =>
+								{
+									pbFileProgress.Value = receivedBytes;
+								}));
 							}
 							Thread.Sleep(1);
 						}
@@ -527,6 +532,11 @@ namespace ServerApp
 						SendFileDataToAllClient(data, fileName, SaveFilePath);
 						// 파일을 보낸 클라이언트에게 다른 클라이언트에게 파일을 송신했다는 확인 메시지 발송
 						FileSendedCallbackToClient(data, fileName);
+
+						Invoke(new Action(() =>
+						{
+							pbFileProgress.Value = 0;
+						}));
 					}
 
 				}

@@ -3,15 +3,12 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
-using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using static System.Net.WebRequestMethods;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using File = System.IO.File;
 
 namespace MainApp
@@ -26,7 +23,7 @@ namespace MainApp
 		/// <summary>
 		/// 전송할 데이터의 타입 구분
 		/// </summary>
-		private enum DataType { TEXT = 1, File, CallBackFileAccept, CallBackFileSended, Ping };
+		private enum DataType { TEXT = 1, File, CallBackFileAccept, CallBackFileSended, Ping};
 
 		/// <summary>
 		/// 서버에 업로드할 파일 경로
@@ -334,6 +331,7 @@ namespace MainApp
 									pbFileProgress.Value = receivedBytes;
 								}));
 							}
+							Thread.Sleep(1);
 						}
 
 						// 전역 변수에 파일 데이터 저장

@@ -28,7 +28,7 @@
 		/// </summary>
 		private void InitializeComponent()
 		{
-			this.components = new System.ComponentModel.Container();
+			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ServerClient));
 			this.gbServer = new System.Windows.Forms.GroupBox();
 			this.labelPort = new System.Windows.Forms.Label();
 			this.textPort = new System.Windows.Forms.TextBox();
@@ -40,9 +40,11 @@
 			this.lbLog = new System.Windows.Forms.ListBox();
 			this.ssServerStatus = new System.Windows.Forms.StatusStrip();
 			this.ssServerStatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
-			this.CheckConnectList = new System.Windows.Forms.Timer(this.components);
+			this.CheckConnectList = new System.Windows.Forms.Timer();
 			this.cbIPCheck = new System.Windows.Forms.CheckBox();
 			this.cbOnlyLocalIP = new System.Windows.Forms.CheckBox();
+			this.pbFileProgress = new System.Windows.Forms.ProgressBar();
+			this.lbFileProgress = new System.Windows.Forms.Label();
 			this.gbServer.SuspendLayout();
 			this.gbConnectingList.SuspendLayout();
 			this.gbLog.SuspendLayout();
@@ -182,11 +184,29 @@
 			this.cbOnlyLocalIP.UseVisualStyleBackColor = true;
 			this.cbOnlyLocalIP.CheckedChanged += new System.EventHandler(this.cbOnlyLocalIP_CheckedChanged);
 			// 
+			// pbFileProgress
+			// 
+			this.pbFileProgress.Location = new System.Drawing.Point(97, 383);
+			this.pbFileProgress.Name = "pbFileProgress";
+			this.pbFileProgress.Size = new System.Drawing.Size(532, 15);
+			this.pbFileProgress.TabIndex = 7;
+			// 
+			// lbFileProgress
+			// 
+			this.lbFileProgress.AutoSize = true;
+			this.lbFileProgress.Location = new System.Drawing.Point(10, 384);
+			this.lbFileProgress.Name = "lbFileProgress";
+			this.lbFileProgress.Size = new System.Drawing.Size(81, 12);
+			this.lbFileProgress.TabIndex = 8;
+			this.lbFileProgress.Text = "파일 처리상태";
+			// 
 			// ServerClient
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.ClientSize = new System.Drawing.Size(641, 423);
+			this.Controls.Add(this.lbFileProgress);
+			this.Controls.Add(this.pbFileProgress);
 			this.Controls.Add(this.cbOnlyLocalIP);
 			this.Controls.Add(this.cbIPCheck);
 			this.Controls.Add(this.ssServerStatus);
@@ -194,6 +214,7 @@
 			this.Controls.Add(this.gbConnectingList);
 			this.Controls.Add(this.gbServer);
 			this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+			this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
 			this.MaximizeBox = false;
 			this.Name = "ServerClient";
 			this.Text = "Server";
@@ -224,6 +245,8 @@
 		private System.Windows.Forms.Timer CheckConnectList;
 		private System.Windows.Forms.CheckBox cbIPCheck;
 		private System.Windows.Forms.CheckBox cbOnlyLocalIP;
+		private System.Windows.Forms.ProgressBar pbFileProgress;
+		private System.Windows.Forms.Label lbFileProgress;
 	}
 }
 

@@ -28,6 +28,7 @@
 		/// </summary>
 		private void InitializeComponent()
 		{
+			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainClient));
 			this.gbMain = new System.Windows.Forms.GroupBox();
 			this.textConnectIp3 = new System.Windows.Forms.TextBox();
 			this.lbIP3 = new System.Windows.Forms.Label();
@@ -442,6 +443,7 @@
 			this.Controls.Add(this.gbInfo);
 			this.Controls.Add(this.gbMain);
 			this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+			this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
 			this.KeyPreview = true;
 			this.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
 			this.MaximizeBox = false;
