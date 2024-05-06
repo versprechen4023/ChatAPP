@@ -78,7 +78,7 @@ namespace ServerApp
 				if (!CheckPortNumber(port)) return;
 
 				// IP 설정
-				var localIP = AcceptLocalOnly ? "127.0.0.1" : GetLocalIP();
+				var localIP = GetLocalIP();
 
 				// 서버 설정 및 실행 시작(공유기 환경일 경우 localIP에 대한 포트포워딩 필요) 내부 환경일경우 127.0.0.1 활용
 				var localEndPoint = new IPEndPoint(IPAddress.Parse(localIP), int.Parse(port));
@@ -246,9 +246,20 @@ namespace ServerApp
 					var ipResult = IsKRIP(ip.Address.ToString());
 					if (!ipResult) 
 					{ 
-						UpdateLog($"{client.Client.RemoteEndPoint}접속 차단"); 
+						UpdateLog($"{client.Client.RemoteEndPoint} 해외 아이피 접속 차단"); 
 						clientInfo.Socket.Close(); 
 						return; 
+					}
+				}
+				else if (AcceptLocalOnly)
+				{
+					IPEndPoint ip = client.Client.RemoteEndPoint as IPEndPoint;
+					var ipResult = IsPrivateIP(ip.Address.ToString());
+					if (!ipResult)
+					{
+						UpdateLog($"{client.Client.RemoteEndPoint} 외부 아이피 접속 차단");
+						clientInfo.Socket.Close();
+						return;
 					}
 				}
 
@@ -704,6 +715,27 @@ namespace ServerApp
 			catch (Exception ex)
 			{
 				UpdateLog(ex.Message); return false;
+			}
+		}
+
+		/// <summary>
+		/// 사설 IP 검증
+		/// </summary>
+		/// <param name="ip"></param>
+		/// <returns></returns>
+		private bool IsPrivateIP(string ip)
+		{
+			var ipBytes = IPAddress.Parse(ip).GetAddressBytes();
+			switch (ipBytes[0])
+			{
+				case 10:
+					return true; // 10.0.0.1
+				case 172:
+					return ipBytes[1] < 32 && ipBytes[1] >= 16; // 172.16~32
+				case 192:
+					return ipBytes[1] == 168; // 192.168
+				default:
+					return false;
 			}
 		}
 

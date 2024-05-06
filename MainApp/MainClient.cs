@@ -89,7 +89,7 @@ namespace MainApp
 		/// </summary>
 		/// <param name="sender"></param>
 		/// <param name="e"></param>
-		private void btnConnect_Click(object sender, EventArgs e)
+		private async void btnConnect_Click(object sender, EventArgs e)
 		{
 			// 연결할서버의 포트
 			var connectPort = textConnectPort.Text.Trim();
@@ -97,23 +97,30 @@ namespace MainApp
 			var connectIpAddress = $"{textConnectIp1.Text.Trim()}.{textConnectIp2.Text.Trim()}.{textConnectIp3.Text.Trim()}.{textConnectIp4.Text.Trim()}".Trim();
 			try
 			{
-				MessageBox.Show(connectIpAddress);
 				// 아아피 포트 정규식 체크
 				if (!CheckPortAndIpNumber(connectPort, connectIpAddress)) return;
 
+				UpdateLog("서버에 접속중입니다...");
+
+				Invoke(new Action(() =>
+				{
+					btnConnect.Enabled = false;
+				}));
+
 				// 접속할 서버의 엔드포인트 작성
-				var connectEndPoint = new IPEndPoint(IPAddress.Parse(connectIpAddress), int.Parse(connectPort));
+				//var connectEndPoint = new IPEndPoint(IPAddress.Parse(connectIpAddress), int.Parse(connectPort));
 
 				// IP 설정
-				var localIP = ConnectPrivate ? "127.0.0.1" : GetPublicIP();
+				var localIP = ConnectPrivate ? GetLocalIP() : GetPublicIP();
 
 				// 클라이언트의 엔드포인트 작성(포트는 자동할당) 내부 환경일경우 127.0.0.1 or GetLocalIP() 함수 활용
 				var localEndPoint = new IPEndPoint(IPAddress.Parse(localIP), 0);
 
 				// 클라이언트 생성
 				Client = new TcpClientExtension(localEndPoint);
-				// 서버에 접속
-				Client.Client.Connect(connectEndPoint);
+
+				// 비동기로 서버에 접속시도
+				await Client.Client.ConnectAsync(IPAddress.Parse(connectIpAddress), int.Parse(connectPort));
 
 				// 연결 테스트용 소켓 전송
 				byte[] test = new byte[1];
@@ -129,20 +136,40 @@ namespace MainApp
 				var data = new CommonData(Client);
 				Client.Socket.BeginReceive(data.Data, 0, data.Data.Length, SocketFlags.None, ReceiveCallback, data);
 
-				btnConnect.Enabled = false;
-				btnDisconnect.Enabled = true;
-				btnSendMessage.Enabled = true;
-				btnFileUpload.Enabled = true;
+				Invoke(new Action(() =>
+				{
+					btnDisconnect.Enabled = true;
+					btnSendMessage.Enabled = true;
+					btnFileUpload.Enabled = true;
+				}));
 
 			}
-			catch (SocketException ex) when (ex.SocketErrorCode == SocketError.TimedOut || ex.SocketErrorCode == SocketError.AccessDenied) 
+			catch (SocketException ex)
 			{
-				UpdateLog("서버에 접속 할 수 없습니다 서버가 오프라인이거나 연결을 거부 했습니다");
+				if(ex.SocketErrorCode == SocketError.TimedOut || ex.SocketErrorCode == SocketError.ConnectionRefused)
+				{
+					MessageBox.Show("서버에 접속 할 수 없습니다.\n서버가 오프라인이거나 연결을 거부 했습니다");
+					Invoke(new Action(() =>
+					{
+						btnConnect.Enabled = true;
+					}));
+				}
+				else if(ex.SocketErrorCode == SocketError.AddressNotAvailable)
+				{
+					MessageBox.Show("그 아이피 주소로는 연결 할 수 없습니다.\n내부망에서 연결 시도를 하는 경우에는 \"내부망연결\"에 체크 해주십시오.");
+					Invoke(new Action(() =>
+					{
+						btnConnect.Enabled = true;
+					}));
+				}
 			}
-			catch(Exception ex)
+			catch(Exception)
 			{
-				UpdateLog(ex.Message);
-				UpdateLog("서버 접속에 실패했습니다");
+				MessageBox.Show("서버 접속에 실패했습니다");
+				Invoke(new Action(() =>
+				{
+					btnConnect.Enabled = true;
+				}));
 			}
 		}
 
