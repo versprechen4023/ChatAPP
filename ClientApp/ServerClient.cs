@@ -1,6 +1,7 @@
 ﻿using AppCommon;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
@@ -504,15 +505,13 @@ namespace ServerApp
 						Array.Copy(data.Data, 12 + fileNameLen, fileBuffer, 0, length - (12 + fileNameLen));
 						receivedBytes += length - (12 + fileNameLen);
 
-
-						// 나머지 파일 데이터 가져오기
 						while (receivedBytes < fileSizeLen)
 						{
 							if (ns.DataAvailable)
 							{
-								Thread.Sleep(2000);
 								receivedBytes += data.Client.Socket.Receive(fileBuffer, receivedBytes, (fileSizeLen - receivedBytes), SocketFlags.None);
 							}
+							Thread.Sleep(1);
 						}
 
 						// 이진데이터로 파일 작성
@@ -679,6 +678,9 @@ namespace ServerApp
 		{
 			try
 			{
+				// 사설 아이피 확인
+				if (IsPrivateIP(ip)) { return true; }
+
 				// url 작성
 				string apiKey = "Sxg%2F3MQsYRuNFuYI2f3UnLO4QMtIfT00P9C0OxBzEE79CYCM%2BfGA354hNLUFpw76Ka7aMCl4wIgY8AXCwz4Krg%3D%3D";
 				string url = "http://apis.data.go.kr/B551505/whois/ipas_country_code";

@@ -59,6 +59,8 @@
 			this.lbFilelabel = new System.Windows.Forms.Label();
 			this.btnFileDownload = new System.Windows.Forms.Button();
 			this.groupBox1 = new System.Windows.Forms.GroupBox();
+			this.pbFileProgress = new System.Windows.Forms.ProgressBar();
+			this.lbFileProgress = new System.Windows.Forms.Label();
 			this.gbMain.SuspendLayout();
 			this.gbInfo.SuspendLayout();
 			this.gbLog.SuspendLayout();
@@ -401,6 +403,8 @@
 			// 
 			// groupBox1
 			// 
+			this.groupBox1.Controls.Add(this.lbFileProgress);
+			this.groupBox1.Controls.Add(this.pbFileProgress);
 			this.groupBox1.Controls.Add(this.btnFileDownload);
 			this.groupBox1.Location = new System.Drawing.Point(599, 169);
 			this.groupBox1.Name = "groupBox1";
@@ -408,6 +412,22 @@
 			this.groupBox1.TabIndex = 0;
 			this.groupBox1.TabStop = false;
 			this.groupBox1.Text = "파일 처리";
+			// 
+			// pbFileProgress
+			// 
+			this.pbFileProgress.Location = new System.Drawing.Point(6, 137);
+			this.pbFileProgress.Name = "pbFileProgress";
+			this.pbFileProgress.Size = new System.Drawing.Size(77, 23);
+			this.pbFileProgress.TabIndex = 0;
+			// 
+			// lbFileProgress
+			// 
+			this.lbFileProgress.AutoSize = true;
+			this.lbFileProgress.Location = new System.Drawing.Point(4, 122);
+			this.lbFileProgress.Name = "lbFileProgress";
+			this.lbFileProgress.Size = new System.Drawing.Size(81, 12);
+			this.lbFileProgress.TabIndex = 0;
+			this.lbFileProgress.Text = "파일 처리상태";
 			// 
 			// MainClient
 			// 
@@ -439,6 +459,7 @@
 			this.gbFileUpload.ResumeLayout(false);
 			this.gbFileUpload.PerformLayout();
 			this.groupBox1.ResumeLayout(false);
+			this.groupBox1.PerformLayout();
 			this.ResumeLayout(false);
 			this.PerformLayout();
 
@@ -477,6 +498,8 @@
 		private System.Windows.Forms.TextBox textConnectIp4;
 		private System.Windows.Forms.TextBox textConnectIp3;
 		private System.Windows.Forms.Label lbIP3;
+		private System.Windows.Forms.Label lbFileProgress;
+		private System.Windows.Forms.ProgressBar pbFileProgress;
 	}
 }
 

@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static System.Net.WebRequestMethods;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using File = System.IO.File;
 
 namespace MainApp
@@ -25,7 +26,7 @@ namespace MainApp
 		/// <summary>
 		/// 전송할 데이터의 타입 구분
 		/// </summary>
-		private enum DataType { TEXT = 1, File, CallBackFileAccept, CallBackFileSended, Ping};
+		private enum DataType { TEXT = 1, File, CallBackFileAccept, CallBackFileSended, Ping };
 
 		/// <summary>
 		/// 서버에 업로드할 파일 경로
@@ -146,30 +147,33 @@ namespace MainApp
 			}
 			catch (SocketException ex)
 			{
-				if(ex.SocketErrorCode == SocketError.TimedOut || ex.SocketErrorCode == SocketError.ConnectionRefused)
+				if (ex.SocketErrorCode == SocketError.TimedOut || ex.SocketErrorCode == SocketError.ConnectionRefused)
 				{
 					MessageBox.Show("서버에 접속 할 수 없습니다.\n서버가 오프라인이거나 연결을 거부 했습니다");
 					Invoke(new Action(() =>
 					{
 						btnConnect.Enabled = true;
 					}));
+					UpdateLog("서버 접속에 실패했습니다");
 				}
-				else if(ex.SocketErrorCode == SocketError.AddressNotAvailable)
+				else if (ex.SocketErrorCode == SocketError.AddressNotAvailable)
 				{
 					MessageBox.Show("그 아이피 주소로는 연결 할 수 없습니다.\n내부망에서 연결 시도를 하는 경우에는 \"내부망연결\"에 체크 해주십시오.");
 					Invoke(new Action(() =>
 					{
 						btnConnect.Enabled = true;
 					}));
+					UpdateLog("서버 접속에 실패했습니다");
 				}
 			}
-			catch(Exception)
+			catch (Exception)
 			{
 				MessageBox.Show("서버 접속에 실패했습니다");
 				Invoke(new Action(() =>
 				{
 					btnConnect.Enabled = true;
 				}));
+				UpdateLog("서버 접속에 실패했습니다");
 			}
 		}
 
@@ -221,6 +225,9 @@ namespace MainApp
 				// 메시지 창 초기화
 				textMessage.Text = "";
 				textMessage.Focus();
+
+				// 버튼 입력 제한 활성
+				_= setMessageSendInterVal(2000);
 			}
 			catch (Exception)
 			{
@@ -288,7 +295,7 @@ namespace MainApp
 
 					SetFileSendAction(message, true);
 				}
-				else if(dataType == (int)DataType.Ping)
+				else if (dataType == (int)DataType.Ping)
 				{
 					// 핑 메타데이터 생성
 					var ping = BitConverter.GetBytes((int)DataType.Ping);
@@ -314,14 +321,18 @@ namespace MainApp
 						Array.Copy(data.Data, 12 + fileNameLen, fileBuffer, 0, length - (12 + fileNameLen));
 						receivedBytes += length - (12 + fileNameLen);
 
-
+						// 진행률을 확인하기위해 프로그레스바에 파일 크기 할당
+						pbFileProgress.Maximum = fileSizeLen;
 						// 나머지 파일 데이터 가져오기
 						while (receivedBytes < fileSizeLen)
 						{
 							if (ns.DataAvailable)
 							{
-								Thread.Sleep(2000);
 								receivedBytes += data.Client.Socket.Receive(fileBuffer, receivedBytes, (fileSizeLen - receivedBytes), SocketFlags.None);
+								Invoke(new Action(() =>
+								{
+									pbFileProgress.Value = receivedBytes;
+								}));
 							}
 						}
 
@@ -334,6 +345,7 @@ namespace MainApp
 
 						Invoke(new Action(() =>
 						{
+							pbFileProgress.Value = 0;
 							btnFileDownload.Enabled = true;
 						}));
 					}
@@ -606,7 +618,7 @@ namespace MainApp
 					btnFileUpload.Enabled = true;
 				}));
 			}
-			catch(Exception ex)
+			catch (Exception ex)
 			{
 				UpdateLog(ex.Message);
 				UpdateLog("파일 업로드에 실패했습니다");
@@ -699,9 +711,15 @@ namespace MainApp
 			}
 		}
 
+		/// <summary>
+		/// 파일명 최대 길이 자르기
+		/// </summary>
+		/// <param name="data"></param>
+		/// <param name="length"></param>
+		/// <returns></returns>
 		private string TryLabelSubString(string data, int length)
 		{
-			if(data.Length > length)
+			if (data.Length > length)
 			{
 				data = data.Substring(0, length) + "...";
 			}
@@ -717,7 +735,7 @@ namespace MainApp
 			try
 			{
 				// 파일 용량 경고
-				if(UploadFileBuffer.Length > ((1024 * 1024) * 100)) 
+				if (UploadFileBuffer.Length > ((1024 * 1024) * 100))
 				{
 					if (MessageBox.Show("전송할 파일의 용량이 100MB 이상 입니다.\n고용량의 파일을 전송시 서버에서 처리할동안 프로그램이 멈추거나\n메모리 부족시 서버와의 연결이 끊어 질 수 있습니다.\n전송하시겠습니까?", " 경고", MessageBoxButtons.YesNo) == DialogResult.No)
 					{
@@ -760,7 +778,7 @@ namespace MainApp
 		/// <param name="e"></param>
 		private void btnFileDownload_Click(object sender, EventArgs e)
 		{
-			using(SaveFileDialog saveFileDialog = new SaveFileDialog())
+			using (SaveFileDialog saveFileDialog = new SaveFileDialog())
 			{
 				// 다이얼로그 로드시 최초로 보여주는 저장위치(C드라이브)
 				saveFileDialog.InitialDirectory = @"C:\";
@@ -790,7 +808,7 @@ namespace MainApp
 		/// <param name="e"></param>
 		private void cbConnectPrivate_CheckedChanged(object sender, EventArgs e)
 		{
-			if(cbConnectPrivate.Checked)
+			if (cbConnectPrivate.Checked)
 			{
 				ConnectPrivate = true;
 			}
@@ -798,6 +816,28 @@ namespace MainApp
 			{
 				ConnectPrivate = false;
 			}
+		}
+
+		/// <summary>
+		/// 메시지 전송 버튼 초 제한 설정
+		/// </summary>
+		/// <returns></returns>
+		private async Task setMessageSendInterVal(int interVal)
+		{
+
+			Invoke(new Action(() =>
+			{
+				btnSendMessage.Enabled = false;
+			}));
+
+			// 메시지 전송 활성화 대기
+			await Task.Delay(interVal);
+
+			Invoke(new Action(() =>
+			{
+				btnSendMessage.Enabled = true;
+			}));
+
 		}
 	}
 }
