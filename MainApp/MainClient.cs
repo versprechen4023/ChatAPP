@@ -224,7 +224,7 @@ namespace MainApp
 				textMessage.Focus();
 
 				// 버튼 입력 제한 활성
-				_= setMessageSendInterVal(2000);
+				_ = setMessageSendInterVal(2000);
 			}
 			catch (Exception)
 			{
@@ -276,7 +276,8 @@ namespace MainApp
 					fileSizeLen = BitConverter.ToInt32(data.Data, 8 + fileNameLen);
 
 					// 전송 로그 업데이트
-					UpdateLog($"서버로 부터 파일 수신 : 파일명 : {fileName} 파일 크기 : {CalculateFileSize(fileSizeLen)}");
+					UpdateLog($"서버로 부터 파일을 수신했습니다");
+					UpdateLog($"파일명 : {fileName} 파일 크기 :{CalculateFileSize(fileSizeLen)}");
 				}
 				else if (dataType == (int)DataType.CallBackFileAccept)
 				{
@@ -303,7 +304,12 @@ namespace MainApp
 
 				if (dataType == (int)DataType.File)
 				{
-					UpdateLog("파일 데이터 처리중...");
+					UpdateLog("파일 데이터 처리중입니다. 데이터 처리중에 프로그램을 닫지 말아 주십시오.");
+
+					Invoke(new Action(() =>
+					{
+						btnDisconnect.Enabled = false;
+					}));
 
 					// 데이터 손실을 막기위해 네트워크 스트림 이용
 					using (NetworkStream ns = new NetworkStream(data.Client.Socket))
@@ -343,6 +349,7 @@ namespace MainApp
 
 						Invoke(new Action(() =>
 						{
+							btnDisconnect.Enabled = true;
 							pbFileProgress.Value = 0;
 							btnFileDownload.Enabled = true;
 						}));
@@ -356,6 +363,10 @@ namespace MainApp
 			catch (Exception)
 			{
 				UpdateLog("서버로 부터 접속이 끊어졌습니다");
+				Invoke(new Action(() =>
+				{
+					btnDisconnect.Enabled = true;
+				}));
 				// 메모리 및 설정 초기화
 				ResetClient();
 			}
@@ -464,6 +475,7 @@ namespace MainApp
 				btnFileSend.Enabled = false;
 				btnFileDownload.Enabled = false;
 				lbFileName.Text = "없음";
+				pbFileProgress.Value = 0;
 			}));
 
 			UploadFilePath = string.Empty;
@@ -541,9 +553,15 @@ namespace MainApp
 			{
 				btnFileUpload.Enabled = status;
 				btnFileSend.Enabled = false;
+				btnSendMessage.Enabled = status;
+				btnDisconnect.Enabled = status;
 				if (DownloadFileBuffer != null && DownloadFileBuffer.Length > 0 && status == true)
 				{
-					btnFileDownload.Enabled = status;
+					btnFileDownload.Enabled = true;
+				}
+				else
+				{
+					btnFileDownload.Enabled = false;
 				}
 			}));
 		}
@@ -585,8 +603,14 @@ namespace MainApp
 				{
 					UpdateLog("파일 업로드 처리 중입니다...");
 
+					// 메모리 정리
+					UploadFileBuffer = null;
+					UploadFilePath = string.Empty;
+
 					Invoke(new Action(() =>
 					{
+						// 라벨명 초기화
+						lbFileName.Text = "없음";
 						btnFileUpload.Enabled = false;
 					}));
 
@@ -610,6 +634,15 @@ namespace MainApp
 			catch (IOException)
 			{
 				MessageBox.Show("파일의 용량이 너무 큽니다 파일은 2GB 이하여야 합니다");
+				UpdateLog("파일 업로드에 실패했습니다");
+				Invoke(new Action(() =>
+				{
+					btnFileUpload.Enabled = true;
+				}));
+			}
+			catch (OutOfMemoryException)
+			{
+				MessageBox.Show("컴퓨터의 메모리가 부족합니다. 파일을 업로드 하지 못했습니다");
 				UpdateLog("파일 업로드에 실패했습니다");
 				Invoke(new Action(() =>
 				{
@@ -685,7 +718,7 @@ namespace MainApp
 					UploadFilePath = string.Empty;
 					Invoke(new Action(() =>
 					{
-						// 라벨에 파일명 표시
+						// 라벨명 초기화
 						lbFileName.Text = "없음";
 					}));
 				});
@@ -693,10 +726,30 @@ namespace MainApp
 			catch (FileNotFoundException)
 			{
 				MessageBox.Show("파일을 찾을 수 없습니다");
+				// 메모리 정리
+				UploadFileBuffer = null;
+				UploadFilePath = string.Empty;
 				Invoke(new Action(() =>
 				{
+					// 라벨명 초기화
+					lbFileName.Text = "없음";
 					btnFileUpload.Enabled = true;
 				}));
+				UpdateLog($"파일을 전송하지 못했습니다");
+			}
+			catch (OutOfMemoryException)
+			{
+				MessageBox.Show("컴퓨터의 메모리가 부족합니다. 파일을 전송하지 못했습니다");
+				// 메모리 정리
+				UploadFileBuffer = null;
+				UploadFilePath = string.Empty;
+				Invoke(new Action(() =>
+				{
+					// 라벨명 초기화
+					lbFileName.Text = "없음";
+					btnFileUpload.Enabled = true;
+				}));
+				UpdateLog($"파일을 전송하지 못했습니다");
 			}
 			catch (Exception)
 			{
@@ -706,6 +759,7 @@ namespace MainApp
 					btnFileUpload.Enabled = true;
 					btnFileSend.Enabled = true;
 				}));
+				UpdateLog($"파일을 전송하지 못했습니다");
 			}
 		}
 
@@ -746,9 +800,24 @@ namespace MainApp
 				// 파일 전송
 				_ = SendFileToServerAsync();
 			}
+			catch (OutOfMemoryException)
+			{
+				MessageBox.Show("컴퓨터의 메모리가 부족합니다. 파일을 전송하지 못했습니다");
+				// 메모리 정리
+				UploadFileBuffer = null;
+				UploadFilePath = string.Empty;
+				Invoke(new Action(() =>
+				{
+					// 라벨명 초기화
+					lbFileName.Text = "없음";
+					btnFileUpload.Enabled = true;
+				}));
+				UpdateLog($"파일을 전송하지 못했습니다");
+			}
 			catch (Exception)
 			{
-				MessageBox.Show("파일 전송중 에러 발생");
+				MessageBox.Show("파일 전송중 에러가 발생 했습니다");
+				UpdateLog($"파일을 전송하지 못했습니다");
 			}
 		}
 

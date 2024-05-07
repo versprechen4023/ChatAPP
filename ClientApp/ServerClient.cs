@@ -349,6 +349,12 @@ namespace ServerApp
 					// 로그 업데이트
 					UpdateLog($"{client.RemoteEndPoint}에 파일 전송>>{fileName}");
 				}
+
+				// 파일 전송 완료후 파일 삭제
+				if (File.Exists(savefilePath))
+				{
+					File.Delete(savefilePath);
+				}
 			}
 		}
 
@@ -357,7 +363,7 @@ namespace ServerApp
 		/// </summary>
 		/// <param name="data"></param>
 		/// <param name="fileName"></param>
-		private void FileReceiveCallbackToClient(CommonData data, string fileName)
+		private void FileReceiveCallbackToClient(CommonData data, string text)
 		{
 			// 비동기 실행중 클라이언트 리스트에 접근하므로 쓰레드 세이프 처리를 실행
 			lock (ClientList.SyncRoot)
@@ -367,7 +373,7 @@ namespace ServerApp
 				{
 					// 데이터 재조립 후 클라이언트에 발송
 					var dataType = BitConverter.GetBytes((int)DataType.CallBackFileAccept);
-					var message = Encoding.UTF8.GetBytes($"서버에서 {fileName}을 수신하여 처리 중 입니다");
+					var message = Encoding.UTF8.GetBytes(text);
 					byte[] sendData = new byte[dataType.Length + message.Length];
 					dataType.CopyTo(sendData, 0);
 					message.CopyTo(sendData, 4);
@@ -488,7 +494,7 @@ namespace ServerApp
 					UpdateLog("파일 데이터 처리중...");
 
 					// 파일을 보낸 클라이언트한테 파일 수신 확인 메시지 발송
-					FileReceiveCallbackToClient(data, fileName);
+					FileReceiveCallbackToClient(data, $"서버에서 {fileName}을 수신하여 처리 중 입니다. 파일 처리 동안은 서버 안정을 위해 메시지를 보낼 수 없습니다.");
 
 					// 데이터 손실을 막기위해 네트워크 스트림 이용
 					using (NetworkStream ns = new NetworkStream(data.Client.Socket))
@@ -498,6 +504,9 @@ namespace ServerApp
 
 						// 데이터 손실이 없는지 기록
 						var receivedBytes = 0;
+
+						// 마지막 퍼센트 처리 기록
+						var lastPercentageReported = 0;
 
 						// 첫 소켓통신시 받은 파일 데이터 버퍼에 복사(파일종류 + 파일이름 + 파일용량[12byte] + 파일이름바이너리데이터 제외)
 						Array.Copy(data.Data, 12 + fileNameLen, fileBuffer, 0, length - (12 + fileNameLen));
@@ -515,6 +524,17 @@ namespace ServerApp
 								{
 									pbFileProgress.Value = receivedBytes;
 								}));
+
+								// 퍼센트기록 파일이 100mb 이상일 경우 파일 처리 알림 전송
+								if(fileSizeLen >= (1024 * 1024) * 100)
+								{
+									var percentage = (int)((double)receivedBytes / fileSizeLen * 100);
+									if (percentage >= lastPercentageReported + 10)
+									{
+										FileReceiveCallbackToClient(data, $"파일 처리가 {percentage}% 완료되었습니다.");
+										lastPercentageReported = percentage;
+									}
+								}
 							}
 							Thread.Sleep(1);
 						}
