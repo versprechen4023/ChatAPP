@@ -52,6 +52,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Main.Core.cs">
+      <DependentUpon>MainClient.cs</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main.IP.cs">
+      <DependentUpon>MainClient.cs</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main.UI.cs">
+      <DependentUpon>MainClient.cs</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="MainClient.cs">
       <SubType>Form</SubType>
     </Compile>
