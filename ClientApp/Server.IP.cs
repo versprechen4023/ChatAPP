@@ -108,7 +108,7 @@ namespace ServerApp
 				case 10:
 					return true; // 10.0.0.1
 				case 172:
-					return ipBytes[1] < 32 && ipBytes[1] >= 16; // 172.16~32
+					return ipBytes[1] <= 31 && ipBytes[1] >= 16; // 172.16~31
 				case 192:
 					return ipBytes[1] == 168; // 192.168
 				default:

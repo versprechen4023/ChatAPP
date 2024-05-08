@@ -259,8 +259,8 @@ namespace MainApp
 			{
 				MessageBox.Show("컴퓨터의 메모리가 부족합니다. 파일을 전송하지 못했습니다");
 				// 메모리 정리
-				UploadFileBuffer = null;
 				UploadFilePath = string.Empty;
+				DisposeGlobalUploadBuffer();
 				Invoke(new Action(() =>
 				{
 					// 라벨명 초기화
@@ -287,6 +287,10 @@ namespace MainApp
 			{
 				if (openFileDialog.ShowDialog() == DialogResult.OK)
 				{
+					// 메모리 정리
+					UploadFilePath = string.Empty;
+					DisposeGlobalUploadBuffer();
+
 					// 업로드 파일 처리 비동기 실행
 					_ = UploadFileAsync(openFileDialog.FileName);
 				}

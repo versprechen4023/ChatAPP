@@ -60,6 +60,9 @@ namespace MainApp
 				Client.Client.Dispose();
 				Client = null;
 			}
+
+			// 전세대 가비지컬렉터 수행
+			GC.Collect();
 		}
 
 		/// <summary>

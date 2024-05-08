@@ -122,6 +122,9 @@ namespace MainApp
 							Thread.Sleep(1);
 						}
 
+						// 다운로드 버퍼 이미 있으면 비움
+						DisposeGlobalDownloadBuffer();
+
 						// 전역 변수에 파일 데이터 저장
 						DownloadFileBuffer = fileBuffer;
 						DownloadFileName = fileName;
@@ -193,10 +196,6 @@ namespace MainApp
 				await Task.Run(() =>
 				{
 					UpdateLog("파일 업로드 처리 중입니다...");
-
-					// 메모리 정리
-					UploadFileBuffer = null;
-					UploadFilePath = string.Empty;
 
 					Invoke(new Action(() =>
 					{
@@ -284,7 +283,7 @@ namespace MainApp
 					// 파일 용량 데이터
 					var fileSize = BitConverter.GetBytes(fileData.Length);
 
-					// 데이터 조립 type(File) 4 byte, 파일이름데이터, 파일이름(4 byte), 파일용량(4 byte), 파일데이터)
+					// 데이터 조립 type(File) 4 byte, 파일이름(4 byte), 파일이름데이터, 파일용량(4 byte), 파일데이터)
 					var sendData = new byte[dataType.Length + fileNameLen.Length + fileNameData.Length + fileSize.Length + fileData.Length];
 
 					// 배열 앞부분에 메타데이터 삽입
@@ -465,6 +464,30 @@ namespace MainApp
 			}
 			// 0.## + 용량타입으로 반환
 			return string.Format("{0:0.##} {1}", size, units[arraytIndex]);
+		}
+
+		/// <summary>
+		/// 업로드 버퍼 초기화를 위한 가비지 컬렉터 수행
+		/// </summary>
+		private void DisposeGlobalUploadBuffer()
+		{
+			if(this.UploadFileBuffer != null)
+			{
+				this.UploadFileBuffer = null;
+				GC.Collect(0); // 최근에 생성된 객체 소멸
+			}
+		}
+
+		/// <summary>
+		/// 다운로드 버퍼 초기화를 위한 가비지 컬렉터 수행
+		/// </summary>
+		private void DisposeGlobalDownloadBuffer()
+		{
+			if (this.DownloadFileBuffer != null)
+			{
+				this.DownloadFileBuffer = null;
+				GC.Collect(0); // 최근에 생성된 객체 소멸
+			}
 		}
 	}
 }

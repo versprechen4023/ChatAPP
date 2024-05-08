@@ -153,7 +153,7 @@ namespace ServerApp
 					// 파일 용량 데이터
 					var fileSize = BitConverter.GetBytes(fileData.Length);
 
-					// 데이터 조립 type(File) 4 byte, 파일이름데이터, 파일이름(4 byte), 파일용량(4 byte), 파일데이터)
+					// 데이터 조립 type(File) 4 byte, 파일이름(4 byte), 파일이름데이터, 파일용량(4 byte), 파일데이터)
 					var sendData = new byte[dataType.Length + fileNameLen.Length + fileNameData.Length + fileSize.Length + fileData.Length];
 
 					// 배열 앞부분에 메타데이터 삽입
