@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace MainApp
 {
@@ -85,6 +86,60 @@ namespace MainApp
 				btnSendMessage.Enabled = true;
 			}));
 
+		}
+
+		/// <summary>
+		/// 파일 업로드시 에러처리
+		/// </summary>
+		/// <param name="msg"></param>
+		private void ShowFileUploadError(string msg)
+		{
+			MessageBox.Show(msg);
+			UpdateLog("파일 업로드에 실패했습니다");
+			Invoke(new Action(() =>
+			{
+				btnFileUpload.Enabled = true;
+			}));
+		}
+
+		/// <summary>
+		/// 아이피 포트 키 입력 핸들 함수
+		/// </summary>
+		/// <param name="e"></param>
+		/// <returns></returns>
+		private bool KeyHandler(KeyPressEventArgs e)
+		{
+			//숫자와 백스페이스만 허용
+			if (!(char.IsDigit(e.KeyChar) || e.KeyChar == Convert.ToChar(Keys.Back)))
+			{
+				return true;
+			}
+			return false;
+		}
+
+		private void textConnectPort_KeyPress(object sender, KeyPressEventArgs e)
+		{
+			e.Handled = KeyHandler(e);
+		}
+
+		private void textConnectIp4_KeyPress(object sender, KeyPressEventArgs e)
+		{
+			e.Handled = KeyHandler(e);
+		}
+
+		private void textConnectIp3_KeyPress(object sender, KeyPressEventArgs e)
+		{
+			e.Handled = KeyHandler(e);
+		}
+
+		private void textConnectIp2_KeyPress(object sender, KeyPressEventArgs e)
+		{
+			e.Handled = KeyHandler(e);
+		}
+
+		private void textConnectIp1_KeyPress(object sender, KeyPressEventArgs e)
+		{
+			e.Handled = KeyHandler(e);
 		}
 	}
 }

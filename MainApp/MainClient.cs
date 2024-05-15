@@ -31,6 +31,11 @@ namespace MainApp
 		private string UploadFilePath = string.Empty;
 
 		/// <summary>
+		/// 업로드 최대 용량(디폴트 32bit)
+		/// </summary>
+		private const long MAX_UPLOAD_FILE_BUFFER_SIZE = 2147483647;
+
+		/// <summary>
 		/// 서버에 업로드할 파일 버퍼
 		/// </summary>
 		private byte[] UploadFileBuffer;

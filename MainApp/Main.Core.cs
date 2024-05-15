@@ -204,6 +204,20 @@ namespace MainApp
 						btnFileUpload.Enabled = false;
 					}));
 
+					// 파일 사이즈 얻기
+					long fileSize = GetFileLength(filePath);
+
+					if (fileSize > MAX_UPLOAD_FILE_BUFFER_SIZE) 
+					{
+						ShowFileUploadError("파일이 시스템에서 제한한 용량보다 큽니다");
+						return;
+					}
+					else if(fileSize == 0)
+					{
+						ShowFileUploadError("파일이 존재하지 않습니다");
+						return;
+					}
+
 					// 파일의 바이너리 데이터 읽기 시도
 					UploadFileBuffer = File.ReadAllBytes(filePath);
 
@@ -221,32 +235,17 @@ namespace MainApp
 					UpdateLog("파일을 서버에 송신할 준비가 되었습니다.");
 				});
 			}
-			catch (IOException)
+			catch (IOException ex)
 			{
-				MessageBox.Show("파일의 용량이 너무 큽니다 파일은 2GB 이하여야 합니다");
-				UpdateLog("파일 업로드에 실패했습니다");
-				Invoke(new Action(() =>
-				{
-					btnFileUpload.Enabled = true;
-				}));
+				ShowFileUploadError(ex.Message);
 			}
 			catch (OutOfMemoryException)
 			{
-				MessageBox.Show("컴퓨터의 메모리가 부족합니다. 파일을 업로드 하지 못했습니다");
-				UpdateLog("파일 업로드에 실패했습니다");
-				Invoke(new Action(() =>
-				{
-					btnFileUpload.Enabled = true;
-				}));
+				ShowFileUploadError("컴퓨터의 메모리가 부족합니다. 파일을 업로드 하지 못했습니다");
 			}
 			catch (Exception ex)
 			{
-				UpdateLog(ex.Message);
-				UpdateLog("파일 업로드에 실패했습니다");
-				Invoke(new Action(() =>
-				{
-					btnFileUpload.Enabled = true;
-				}));
+				ShowFileUploadError(ex.Message);
 			}
 		}
 

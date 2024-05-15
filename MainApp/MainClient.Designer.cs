@@ -60,8 +60,8 @@
 			this.lbFilelabel = new System.Windows.Forms.Label();
 			this.btnFileDownload = new System.Windows.Forms.Button();
 			this.groupBox1 = new System.Windows.Forms.GroupBox();
-			this.pbFileProgress = new System.Windows.Forms.ProgressBar();
 			this.lbFileProgress = new System.Windows.Forms.Label();
+			this.pbFileProgress = new System.Windows.Forms.ProgressBar();
 			this.gbMain.SuspendLayout();
 			this.gbInfo.SuspendLayout();
 			this.gbLog.SuspendLayout();
@@ -103,6 +103,7 @@
 			this.textConnectIp3.Size = new System.Drawing.Size(36, 21);
 			this.textConnectIp3.TabIndex = 3;
 			this.textConnectIp3.Text = "0";
+			this.textConnectIp3.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.textConnectIp3_KeyPress);
 			// 
 			// lbIP3
 			// 
@@ -118,7 +119,7 @@
 			// 
 			this.lbIP2.AutoSize = true;
 			this.lbIP2.Font = new System.Drawing.Font("굴림", 9F);
-			this.lbIP2.Location = new System.Drawing.Point(179, 37);
+			this.lbIP2.Location = new System.Drawing.Point(179, 39);
 			this.lbIP2.Name = "lbIP2";
 			this.lbIP2.Size = new System.Drawing.Size(9, 12);
 			this.lbIP2.TabIndex = 0;
@@ -133,6 +134,7 @@
 			this.textConnectIp2.Size = new System.Drawing.Size(36, 21);
 			this.textConnectIp2.TabIndex = 2;
 			this.textConnectIp2.Text = "0";
+			this.textConnectIp2.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.textConnectIp2_KeyPress);
 			// 
 			// textConnectIp4
 			// 
@@ -143,12 +145,13 @@
 			this.textConnectIp4.Size = new System.Drawing.Size(36, 21);
 			this.textConnectIp4.TabIndex = 4;
 			this.textConnectIp4.Text = "1";
+			this.textConnectIp4.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.textConnectIp4_KeyPress);
 			// 
 			// lbIP1
 			// 
 			this.lbIP1.AutoSize = true;
 			this.lbIP1.Font = new System.Drawing.Font("굴림", 9F);
-			this.lbIP1.Location = new System.Drawing.Point(122, 38);
+			this.lbIP1.Location = new System.Drawing.Point(122, 39);
 			this.lbIP1.Name = "lbIP1";
 			this.lbIP1.Size = new System.Drawing.Size(9, 12);
 			this.lbIP1.TabIndex = 0;
@@ -169,10 +172,11 @@
 			// btnDisconnect
 			// 
 			this.btnDisconnect.Enabled = false;
+			this.btnDisconnect.ForeColor = System.Drawing.SystemColors.ControlText;
 			this.btnDisconnect.Location = new System.Drawing.Point(599, 19);
 			this.btnDisconnect.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
 			this.btnDisconnect.Name = "btnDisconnect";
-			this.btnDisconnect.Size = new System.Drawing.Size(66, 35);
+			this.btnDisconnect.Size = new System.Drawing.Size(66, 37);
 			this.btnDisconnect.TabIndex = 8;
 			this.btnDisconnect.TabStop = false;
 			this.btnDisconnect.Text = "종료";
@@ -195,10 +199,12 @@
 			// 
 			this.textConnectPort.Location = new System.Drawing.Point(353, 31);
 			this.textConnectPort.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+			this.textConnectPort.MaxLength = 5;
 			this.textConnectPort.Name = "textConnectPort";
-			this.textConnectPort.Size = new System.Drawing.Size(76, 21);
+			this.textConnectPort.Size = new System.Drawing.Size(46, 21);
 			this.textConnectPort.TabIndex = 5;
 			this.textConnectPort.Text = "33306";
+			this.textConnectPort.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.textConnectPort_KeyPress);
 			// 
 			// textConnectIp1
 			// 
@@ -209,6 +215,7 @@
 			this.textConnectIp1.Size = new System.Drawing.Size(36, 21);
 			this.textConnectIp1.TabIndex = 1;
 			this.textConnectIp1.Text = "127";
+			this.textConnectIp1.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.textConnectIp1_KeyPress);
 			// 
 			// labelPort
 			// 
@@ -222,7 +229,7 @@
 			// labelIp
 			// 
 			this.labelIp.AutoSize = true;
-			this.labelIp.Location = new System.Drawing.Point(5, 30);
+			this.labelIp.Location = new System.Drawing.Point(10, 34);
 			this.labelIp.Name = "labelIp";
 			this.labelIp.Size = new System.Drawing.Size(64, 12);
 			this.labelIp.TabIndex = 0;
@@ -414,13 +421,6 @@
 			this.groupBox1.TabStop = false;
 			this.groupBox1.Text = "파일 처리";
 			// 
-			// pbFileProgress
-			// 
-			this.pbFileProgress.Location = new System.Drawing.Point(6, 137);
-			this.pbFileProgress.Name = "pbFileProgress";
-			this.pbFileProgress.Size = new System.Drawing.Size(77, 23);
-			this.pbFileProgress.TabIndex = 0;
-			// 
 			// lbFileProgress
 			// 
 			this.lbFileProgress.AutoSize = true;
@@ -429,6 +429,13 @@
 			this.lbFileProgress.Size = new System.Drawing.Size(81, 12);
 			this.lbFileProgress.TabIndex = 0;
 			this.lbFileProgress.Text = "파일 처리상태";
+			// 
+			// pbFileProgress
+			// 
+			this.pbFileProgress.Location = new System.Drawing.Point(6, 137);
+			this.pbFileProgress.Name = "pbFileProgress";
+			this.pbFileProgress.Size = new System.Drawing.Size(77, 23);
+			this.pbFileProgress.TabIndex = 0;
 			// 
 			// MainClient
 			// 

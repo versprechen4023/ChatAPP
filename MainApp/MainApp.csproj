@@ -56,6 +56,10 @@
       <DependentUpon>MainClient.cs</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Main.File.cs">
+      <DependentUpon>MainClient.cs</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Main.IP.cs">
       <DependentUpon>MainClient.cs</DependentUpon>
       <SubType>Form</SubType>
