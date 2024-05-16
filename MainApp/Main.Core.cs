@@ -86,6 +86,15 @@ namespace MainApp
 
 				if (dataType == (int)DataType.File)
 				{
+					// 시스템 메모리 체킹(메모리 체킹이 불가능 한 경우 체킹하지 않고 진행)
+					if (!CheckSystemMemory(fileSizeLen, out string errorMsg))
+					{
+						UpdateLog($"{errorMsg} 파일 수신이 취소되었습니다");
+						// 다시 서버로 부터 데이터 수신 대기
+						data.Client.Socket.BeginReceive(data.Data, 0, data.Data.Length, SocketFlags.None, ReceiveCallback, data);
+						return;
+					}
+
 					UpdateLog("파일 데이터 처리중입니다. 데이터 처리중에 프로그램을 닫지 말아 주십시오.");
 
 					Invoke(new Action(() =>
@@ -144,7 +153,6 @@ namespace MainApp
 				// 다시 서버로 부터 데이터 수신 대기
 				data.Client.Socket.BeginReceive(data.Data, 0, data.Data.Length, SocketFlags.None, ReceiveCallback, data);
 			}
-
 			catch (Exception)
 			{
 				UpdateLog("서버로 부터 접속이 끊어졌습니다");
@@ -206,6 +214,9 @@ namespace MainApp
 
 					// 파일 사이즈 얻기
 					long fileSize = GetFileLength(filePath);
+
+					// 시스템 메모리 체킹(메모리 체킹이 불가능 한 경우 체킹하지 않고 진행)
+					if (!CheckSystemMemory(fileSize, out string errorMsg)) { ShowFileUploadError($"{errorMsg} 업로드가 취소되었습니다"); return; }
 
 					if (fileSize > MAX_UPLOAD_FILE_BUFFER_SIZE) 
 					{
