@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using AppCommon;
+using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
 using System.Net;
@@ -8,6 +9,13 @@ namespace ServerApp
 {
 	public partial class ServerClient
 	{
+		/// <summary>
+		/// 아이피 체크 전용 함수 대리자
+		/// </summary>
+		/// <param name="ip"></param>
+		/// <returns></returns>
+		private delegate bool IpCheckDelegate(string ip);
+
 		/// <summary>
 		/// 사설 IP 처리
 		/// </summary>
@@ -114,6 +122,26 @@ namespace ServerApp
 				default:
 					return false;
 			}
+		}
+
+		/// <summary>
+		/// 해외 or 사설아이피 체크 함수
+		/// </summary>
+		/// <param name="clientInfo"></param>
+		/// <param name="ip"></param>
+		/// <param name="method">IsKRIP, IsPrivateIP 메서드</param>
+		/// <returns></returns>
+		private bool CheckIp(TcpClientExtension clientInfo, IPEndPoint ip, string errorMsg, IpCheckDelegate method)
+		{
+			var result = method(ip.Address.ToString());
+
+			if (!result)
+			{
+				UpdateLog($"{clientInfo.Client.Client.RemoteEndPoint} {errorMsg}");
+				clientInfo.Socket.Close();
+			}
+
+			return result;
 		}
 	}
 }

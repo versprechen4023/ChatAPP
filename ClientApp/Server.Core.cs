@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace ServerApp
 {
@@ -62,26 +63,28 @@ namespace ServerApp
 				// 클라이언트 리스트에 접속중인 클라이언트 추가
 				var clientInfo = new TcpClientExtension(client);
 
+				IPEndPoint ip = client.Client.RemoteEndPoint as IPEndPoint;
+
 				// 해외 아이피 차단설정 시 해외 아이피 확인
 				if (BlockForeignIP && !AcceptLocalOnly)
 				{
-					IPEndPoint ip = client.Client.RemoteEndPoint as IPEndPoint;
-					var ipResult = IsKRIP(ip.Address.ToString());
+					var errorMsg = "해외 아이피 접속 차단";
+
+					var ipResult = CheckIp(clientInfo, ip, errorMsg, IsKRIP);
 					if (!ipResult)
 					{
-						UpdateLog($"{client.Client.RemoteEndPoint} 해외 아이피 접속 차단");
-						clientInfo.Socket.Close();
 						return;
 					}
 				}
+				// 사설 아이피 체킹
 				else if (AcceptLocalOnly)
 				{
-					IPEndPoint ip = client.Client.RemoteEndPoint as IPEndPoint;
-					var ipResult = IsPrivateIP(ip.Address.ToString());
+					var errorMsg = "외부 아이피 접속 차단";
+
+					var ipResult = CheckIp(clientInfo, ip, errorMsg, IsPrivateIP);
+
 					if (!ipResult)
 					{
-						UpdateLog($"{client.Client.RemoteEndPoint} 외부 아이피 접속 차단");
-						clientInfo.Socket.Close();
 						return;
 					}
 				}
@@ -476,19 +479,29 @@ namespace ServerApp
 		/// <param name="log"></param>
 		private void UpdateLog(string log)
 		{
-			int max_log_length = 65;
-			int index = 0;
-			while (index < log.Length)
+			int max_log_length = 45; // 글자 최대 길이 한글 기준 45자
+			int max_byte_length = max_log_length * 3; // 한글 기준 3byte
+
+			int byteCount = 0;
+			int startIndex = 0;
+
+			for (int i = 0; i < log.Length; i++)
 			{
-				if (log.Length - index > max_log_length)
+				char c = log[i];
+				byteCount += c > 0x7F ? 3 : 1; // 아스키(영문)일경우 1byte 아니면 3byte
+
+				if (byteCount > max_byte_length)
 				{
-					ShowLog(log.Substring(index, max_log_length));
+					ShowLog(log.Substring(startIndex, i - startIndex));
+					byteCount = 0; // 바이트 계산 초기화
+					startIndex = i; // 인덱스 재시작값 지정
 				}
-				else
-				{
-					ShowLog(log.Substring(index));
-				}
-				index += max_log_length;
+			}
+
+			// 나머지 전체 문자열 출력
+			if (startIndex < log.Length)
+			{
+				ShowLog(log.Substring(startIndex));
 			}
 		}
 

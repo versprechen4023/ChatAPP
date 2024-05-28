@@ -425,19 +425,29 @@ namespace MainApp
 		/// <param name="log"></param>
 		private void UpdateLog(string log)
 		{
-			int max_log_length = 55;
-			int index = 0;
-			while (index < log.Length)
+			int max_log_length = 35; // 글자 최대 길이 한글 기준 35자
+			int max_byte_length = max_log_length * 3; // 한글 기준 3byte
+
+			int byteCount = 0;
+			int startIndex = 0;
+
+			for (int i = 0; i < log.Length; i++)
 			{
-				if (log.Length - index > max_log_length)
+				char c = log[i];
+				byteCount += c > 0x7F ? 3 : 1; // 아스키(영문)일경우 1byte 아니면 3byte
+
+				if (byteCount > max_byte_length)
 				{
-					ShowLog(log.Substring(index, max_log_length));
+					ShowLog(log.Substring(startIndex, i - startIndex));
+					byteCount = 0; // 바이트 계산 초기화
+					startIndex = i; // 인덱스 재시작값 지정
 				}
-				else
-				{
-					ShowLog(log.Substring(index));
-				}
-				index += max_log_length;
+			}
+
+			// 나머지 전체 문자열 출력
+			if (startIndex < log.Length)
+			{
+				ShowLog(log.Substring(startIndex));
 			}
 		}
 
